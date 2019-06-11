@@ -1,0 +1,791 @@
+---
+title: "Differential Expression (DE) Analysis"
+output: 
+  html_document:
+    toc: true
+    toc_float:
+      collapsed: false
+    fig_width: 10
+editor_options: 
+  chunk_output_type: console
+---
+
+<style type="text/css">
+
+blockquote {
+  background: #ECF8FF;
+  border-left: 10px solid #3989CB;
+  margin: 1.5em 10px;
+  padding: 0.5em 10px;
+  font-size: 14px;
+}
+
+h1 { 
+  font-size: 25px;
+  margin-top: 1.5cm;
+  margin-bottom: 0.5cm;
+}
+h2 { 
+  font-size: 18px;
+  margin-top: 1cm;
+  margin-bottom: 0.5cm;
+}
+h3 {
+  font-size: 14px;
+  margin-top: 1cm;
+  margin-bottom: 0.5cm;
+}
+
+table.answer, td.answer {
+   border: 0px;
+   background: #BCE0C0;
+   padding: 10px;
+   width: 100%;
+}
+
+div.answer { display: none;}
+
+</style>
+
+
+```{r setup, include=F}
+knitr::opts_chunk$set(echo = TRUE, tidy=F, eval=T, cache=F)
+qn <- sn <- 0
+```
+
+Setup and load data 
+===================
+
+The data needed for this exercise is obtained from [this publication](LINK). The data files should be in a `data/` subdirectory in your R working directory. You can download the `data/` directory with files [here](data.zip).
+
+`r sn<-sn+1; paste(sn,". ", sep="")` Make a new directory for this exercise and add the `data/` directory to it. Start R and use `setwd()` to change the working directory to the one you created.
+
+`r sn<-sn+1; paste(sn,". ", sep="")` We will use the following R packages in this exercise:
+```{r, message=FALSE, warning=FALSE, results='hide'}
+library(knitr)
+library(topGO)
+library(biomaRt)
+library(piano)
+library(NMF)
+library(org.Mm.eg.db)
+library(Rgraphviz)
+library(edgeR)
+```
+
+If you are not able to load any of these packages, try to install them, either using `biocLite()` (first you need to run `source("http://www.bioconductor.org/biocLite.R")`) or `install.packages()`. If something fails, try to understand the error message and fix it. If you get stuck, ask for help :)  
+
+`r sn<-sn+1; paste(sn,". ", sep="")` Start by reading in the differential expression results from the previous exercise:
+```{r readDE}
+diffExpRes <- read.delim("data/results_DE.txt", stringsAsFactors=F)
+head(diffExpRes[,c(1,3,5,8,9)]) # skip some columns
+```
+
+
+> **Question `r qn<-qn+1;qn`:** How many genes are significant at a cutoff of FDR<0.001?
+
+<div class="answer"><table class="answer"><tr><td class="answer">
+**Answer:** 
+```{r}
+sum(diffExpRes$FDR<0.001)
+```
+</td></tr></table></div>
+
+
+Web-based enrichment analysis 
+=============================
+
+We will start by performing overrepresentation analysis (a.k.a. list enrichment analysis, ...) by using Enrichr and DAVID. Both use a scoring method similar to the Hypergeomtric/Fisher's exact test. To do such a test, we need to have a list of interesting (e.g. differentially expressed) genes and a list of the background (also known as universe). However, both Enrichr and DAVID have their own background lists, so we do not need to specify them explicitly. First, let's make a list of interesting genes!  
+
+`r sn<-sn+1; paste(sn,". ", sep="")` You can use the `write.table` function to print the top significant genes to copy paste into some web browser tools:
+```{r, results="hide"}
+sel <- diffExpRes$ensembl_gene_id[diffExpRes$FDR<0.001]
+write.table(sel, quote=F, row.names=F, col.names=F)
+```
+
+DAVID
+-----
+
+`r sn<-sn+1; paste(sn,". ", sep="")` Select and copy the gene list given by the above command and head over to [DAVID](https://david.ncifcrf.gov/).
+`r sn<-sn+1; paste(sn,". ", sep="")` Locate *Functional Annotation* in the left menu and click the [more](https://david.ncifcrf.gov/helps/functional_annotation.html) link and briefly scroll through that page to get an overview of what the Functional Annotation Tool at DAVID does.
+
+> **Question `r qn<-qn+1;qn`:** What is the alternative to the Fisher Exact P-Value used by DAVID?
+
+<div class="answer"><table class="answer"><tr><td class="answer">
+**Answer:** 
+
+DAVID uses the so-called EASE Score. In the contingency table, 1 is subtracted from the number of genes that are both in the gene-list and in the gene-set.
+</td></tr></table><br></div>
+
+`r sn<-sn+1; paste(sn,". ", sep="")` Now go to the [*Functional Annotation* page](https://david-d.ncifcrf.gov/summary.jsp) and make sure the Upload tab is visible.
+`r sn<-sn+1; paste(sn,". ", sep="")` Paste the copied gene-list, select the correct identifier, and select whether this is a gene list or background (discuss with other students if you are not sure, or ask the instructors). Submit list.
+
+> **Question `r qn<-qn+1;qn`:** Were all gene Ensembl IDs recognized? How many were unmapped?
+
+<div class="answer"><table class="answer"><tr><td class="answer">
+**Answer:** 
+706 were recognized. A few (~19) genes were not in the database.
+</td></tr></table><br></div> 
+
+`r sn<-sn+1; paste(sn,". ", sep="")` Explore the results. For instance, click on Functional Annotation Clustering at the bottom of the page. This shows related gene-sets clustered together in larger groups for a nicer overview.
+
+> **Question `r qn<-qn+1;qn`:** What seems to be the main functions of the top significant genes (i.e. in summary what are the significantly enriched gene-sets)? Does this make sense considering the experimental design?
+
+<div class="answer"><table class="answer"><tr><td class="answer">
+**Answer:** 
+Lipid, fatty-acid and sterol metabolism. Membrane, ER. Muscle contraction. Synapse.
+</td></tr></table><br></div>
+
+`r sn<-sn+1; paste(sn,". ", sep="")` Now, rerun DAVID but use gene symbols as input instead. Hint: you need to modify the command above creating the `sel` object. Also, DAVID will probably warn you at some point that the genes map to multiple species. Select the correct species and also go to the background tab and select the correct background.
+
+> **Question `r qn<-qn+1;qn`:** Were all gene symbols recognized? How many were unmapped? 
+
+<div class="answer"><table class="answer"><tr><td class="answer">
+**Answer:** 
+```{r, results="hide"}
+sel2 <- diffExpRes$mgi_symbol[diffExpRes$FDR<0.001]
+write.table(sel2, quote=F, row.names=F, col.names=F)
+```
+Select OFFICIAL_GENE_SYMBOL. Multiple species were mapped. Select mouse. 720 gene symbols were matched. 4 were not recognized.
+</td></tr></table><br></div> 
+
+> **Question `r qn<-qn+1;qn`:** How many genes in our list overlap with the GO-term Lipid biosynthesis? (Hint: check e.g. the Functional Annotation Clustering)  
+
+<div class="answer"><table class="answer"><tr><td class="answer">
+**Answer:** 
+42 genes.
+</td></tr></table><br></div> 
+
+> **Question `r qn<-qn+1;qn`:** Does this list give the same results as using the Ensembl IDs?
+
+<div class="answer"><table class="answer"><tr><td class="answer">
+**Answer:** 
+Not 100% exactly the same, since the recognized gene-list is slightly different. But very similar results.
+</td></tr></table><br></div> 
+
+Enrichr
+-------
+
+As an alternative to DAVID we can try [Enrichr](http://amp.pharm.mssm.edu/Enrichr/). This page takes human gene symbols as input, so first we need to translate our mouse Ensembl IDs to that. This can be done in many ways, one way is to use the `biomaRt` package (find a user guide [here](http://bioconductor.org/packages/release/bioc/vignettes/biomaRt/inst/doc/biomaRt.html) or type `vignette("biomaRt")`):
+
+```{r, message=FALSE}
+# Use biomaRt to translate the mouse genes into human orthologs:
+# Select the Ensembl BioMart database
+ensembl <- useMart("ENSEMBL_MART_ENSEMBL")
+# Select the mouse dataset and update the Mart object: 
+ensembl <- useDataset("mmusculus_gene_ensembl", mart=ensembl)
+# Make the query:
+bm <- getBM(attributes=c("ensembl_gene_id","hsapiens_homolog_ensembl_gene"), # this is what we want to extract 
+            filters="ensembl_gene_id", # this determines the filter
+            values=sel, # this are the values to filter for (get only the genes in our list)
+            mart=ensembl)
+head(bm)
+```
+
+As you can see, the above code gave us a map between mouse and human ensembl gene IDs. But this is not exactly what we wanted, we need human gene *symbols*.   
+  
+`r sn<-sn+1; paste(sn,". ", sep="")` Change the `attributes` argument to the proper setting. 
+
+Use the function `listAttributes(ensembl)` to see all possible options. Hint: if there are too many options to go through you can use `grep` to pull out the relevant ones, e.g.:
+
+```{r, results="hide"}
+tmp <- listAttributes(ensembl)
+tmp[grep("Human",tmp[,2]),]
+```
+
+If you are working in RStudio you can also use the convenient command `View` and then search for *human*, e.g.:
+
+```{r, eval=F}
+View(listAttributes(ensembl))
+```
+
+Try it also for the `bm` object. For future reference, note that you can also use `listDatasets(ensembl)` to see which datasetes you can choose from, try it! 
+
+> **Question `r qn<-qn+1;qn`:** How many of the genes in our selected list have gene symbols?  
+
+<div class="answer"><table class="answer"><tr><td class="answer">
+**Answer:** 
+```{r}
+# Make the query:
+bm <- getBM(attributes=c("ensembl_gene_id","hsapiens_homolog_associated_gene_name"), # this is what we want to extract 
+            filters="ensembl_gene_id", # this determines the filter
+            values=sel, # this are the values to filter for (get only the genes in our list)
+            mart=ensembl)
+head(bm)
+```
+```{r}
+# subset to the rows were the gene-symbol is >1 characters:
+tmp <- bm[nchar(bm[,2])>1,]
+# How many unique Ensembl IDs?
+length(unique(tmp$ensembl_gene_id))
+```
+</td></tr></table><br></div> 
+
+`r sn<-sn+1; paste(sn,". ", sep="")` Get familiar with the `duplicated` and `unique` functions:
+
+```{r}
+# A vector to test stuff on:
+tmp <- c(1,2,2,3,4,4,4,5)
+# Get unique elements:
+unique(tmp)
+# Which elements are duplicated?
+duplicated(tmp)
+# How many duplicates are there:
+sum(duplicated(tmp))
+# Which are the duplicated elements:
+tmp[duplicated(tmp)]
+# Which are the unique duplicated elements:
+unique(tmp[duplicated(tmp)])
+```
+
+Make sure you understand how these two functions work and what they do, then move ahead with the following steps and questions:
+
+> **Question `r qn<-qn+1;qn`:** Are there duplicated Ensembl IDs or gene symbols in the list for Enrichr (`bm`)? How can this affect the results that we get?
+
+<div class="answer"><table class="answer"><tr><td class="answer">
+**Answer:** 
+```{r}
+# Duplicated Ensembl IDs:
+sum(duplicated(bm$ensembl_gene_id))
+# Duplicated gene symbols:
+sum(duplicated(bm$hsapiens_homolog_associated_gene_name))
+```
+This means that some Ensembl IDs map to more than one gene symbol, and that multiple Ensemble IDs can map to the same gene symbol.
+
+</td></tr></table><br></div> 
+
+`r sn<-sn+1; paste(sn,". ", sep="")` Now, run `getBM` again, this time also adding information about % identity between mouse and human genes. 
+`r sn<-sn+1; paste(sn,". ", sep="")` Make a boxplot of the % identity for our gene list. Hint: try `?boxplot` if you are unsure about this. Try a histogram as well (`hist()`)!
+
+> **Question `r qn<-qn+1;qn`:** Looking at the boxplot, are there any reasons to be concerned?  
+
+<div class="answer"><table class="answer"><tr><td class="answer">
+**Answer:** 
+```{r, message=FALSE}
+# Make the query:
+bm <- getBM(attributes=c("ensembl_gene_id","hsapiens_homolog_associated_gene_name",
+                         "hsapiens_homolog_perc_id"), # this is what we want to extract 
+            filters="ensembl_gene_id", # this determines the filter
+            values=sel, # this are the values to filter for (get only the genes in our list)
+            mart=ensembl)
+head(bm)
+boxplot(bm$hsapiens_homolog_perc_id)
+hist(bm$hsapiens_homolog_perc_id, breaks=50)
+```
+There are some genes with very low % identity, one could consider to remove these. The majority of genes have high similarity however, which is good.
+</td></tr></table><br></div> 
+
+> **Question `r qn<-qn+1;qn`:** Which gene in the list has the lowest % identity?
+
+<div class="answer"><table class="answer"><tr><td class="answer">
+**Answer:** 
+```{r}
+idx <- order(bm$hsapiens_homolog_perc_id)
+bm[idx[1],]
+```
+
+</td></tr></table><br></div> 
+
+
+`r sn<-sn+1; paste(sn,". ", sep="")` Paste your list of human gene symbols on the [Enrichr](http://amp.pharm.mssm.edu/Enrichr/) website. Look at Ontologies > GO Biological Process.
+
+> **Question `r qn<-qn+1;qn`:** Are the results similar to those we got from DAVID?
+
+<div class="answer"><table class="answer"><tr><td class="answer">
+**Answer:** 
+```{r, results="hide"}
+write.table(bm$hsapiens_homolog_associated_gene_name, col.names=F, row.names=F, quote=F)
+```
+Yes, fairly similar. There is muscle contraction, sterol and lipid biosynthesis, and myelination.
+</td></tr></table><br></div> 
+
+
+`r sn<-sn+1; paste(sn,". ", sep="")` Look around on the Enrichr page and get familiar with the different results. Look also on the different views, e.g. Table is good to see the actual p-values of the results.
+
+> **Question `r qn<-qn+1;qn`:** What do the edges (links) in the network view on the Enrichr webpage denote? (Note: The network view is not available for some gene-set collections, try to click on a different tab and gene set collection to find an example of the network view.)  
+
+<div class="answer"><table class="answer"><tr><td class="answer">
+**Answer:** 
+See http://amp.pharm.mssm.edu/Enrichr/help#basics&q=5. The edges denote that there is a gene overlap between gene-sets.
+</td></tr></table><br></div> 
+
+> **Question `r qn<-qn+1;qn`:** We have this far used a cutoff of FDR<0.001. Try a few different cutoffs and rerun DAVID and Enrichr. How different are the results?  
+
+<div class="answer"><table class="answer"><tr><td class="answer">
+**Answer:** 
+They differ a bit depending on the list size. Overall conclusions are similar.
+</td></tr></table><br></div> 
+
+> **Question `r qn<-qn+1;qn`:** For the Enrichr and DAVID results so far, can we know whether the identified functions are active/inactive or up/down-regulated in KO vs control? If not, how can we go about to get a clue about that?
+
+<div class="answer"><table class="answer"><tr><td class="answer">
+**Answer:** 
+The list we have used contains both up- and down-regulated genes, so we have not taken into account direction. One could subset the list to up- and down-regulated genes separately. Or use a method that takes directionality into account.
+</td></tr></table><br></div> 
+
+
+
+Enrichment analysis in R
+========================
+
+Visualizing GO-terms with TopGO
+-------------------------------
+
+Above, we have looked at some different types of gene-set collections, but a lot of focus has been on GO-terms.  
+
+`r sn<-sn+1; paste(sn,". ", sep="")` Use the internet to learn about what GO-terms are (e.g. [Wikipedia](https://en.wikipedia.org/wiki/Gene_ontology) or [here](http://geneontology.org/page/ontology-structure)).
+
+> **Question `r qn<-qn+1;qn`:** What are the three main domains/ontologies?  
+
+<div class="answer"><table class="answer"><tr><td class="answer">
+**Answer:** 
+Biological process, Molecular function, Cellular compartment.
+</td></tr></table><br></div> 
+
+> **Question `r qn<-qn+1;qn`:** By whom and how are GO-terms maintained/defined/updated? 
+
+<div class="answer"><table class="answer"><tr><td class="answer">
+**Answer:** 
+The Gene Ontology Consortium. But edits can and are submitted by the research community.
+</td></tr></table><br></div> 
+
+> **Question `r qn<-qn+1;qn`:** What is the evidence code?  
+
+<div class="answer"><table class="answer"><tr><td class="answer">
+**Answer:** 
+A description denoting the type of evidence underlying a specific annotation.
+</td></tr></table><br></div> 
+
+> **Question `r qn<-qn+1;qn`:** How are GO-terms connected to each other?
+
+<div class="answer"><table class="answer"><tr><td class="answer">
+**Answer:** 
+GO-terms are connected in a hierarchical structure with increasing specificity. A term can however have more than one parent term.
+</td></tr></table><br></div> 
+
+We can use e.g. the `topGO` package to visualize gene-set analysis results on the GO hierarchy network ([topGO manual](https://bioconductor.org/packages/release/bioc/vignettes/topGO/inst/doc/topGO.pdf)).  
+
+`r sn<-sn+1; paste(sn,". ", sep="")` Run the code below, it takes a short while to complete. Meanwhile, go through the code and understand what it does.
+
+```{r, message=F, results="hide"}
+# Format for topgo - remove genes without ensembl id:
+d_topgo <- diffExpRes[!is.na(diffExpRes$ensembl_gene_id),]
+rownames(d_topgo) <- d_topgo$ensembl_gene_id
+
+# Create the topGOdata object:
+GOobj <- new("topGOdata",
+             description = "Simple session", # just a name, can be changed
+             ontology = "BP", # set to BP, MF, or CC
+             allGenes = setNames(diffExpRes$FDR, diffExpRes$ensembl_gene_id), # named numeric vector
+             geneSel = function(x) x<0.01, # a function to select genes from the allGenes vector
+             nodeSize = 10, # remove GO-terms with less than this number of genes
+             mapping = "org.Mm.eg.db", # annotation database
+             ID = "ensembl", # gene ID used as names in allGenes vector
+             annot = annFUN.org) 
+# Run GO-term enrichment analysis:
+resultFisher <- runTest(GOobj, algorithm = "classic", statistic = "fisher")
+# Plot results using the GO hierarchical DAG:
+showSigOfNodes(GOobj, score(resultFisher), firstSigNode=15, useInfo ='all')
+```
+
+If you save the plot as a PDF it will be easier to zoom in and read the node text. (Sometimes the plotting misbehaves in RStudio, try running `grid.newpage()`, `plot.new()`, and/or `par(mfcol=c(1,1))` if plotting looks weird.)
+
+> **Question `r qn<-qn+1;qn`:** What are the circles and squares denoting?  
+
+<div class="answer"><table class="answer"><tr><td class="answer">
+**Answer:** 
+Rectangles are the significant terms, circles are connected terms. Color reflects significance.
+</td></tr></table><br></div> 
+
+> **Question `r qn<-qn+1;qn`:** Which is the most significant BP GO-term?  
+
+<div class="answer"><table class="answer"><tr><td class="answer">
+**Answer:** 
+```{r}
+GenTable(GOobj,resultFisher)
+```
+Muscle contraction.
+</td></tr></table><br></div> 
+
+
+`r sn<-sn+1; paste(sn,". ", sep="")` Now make a topGO plot for the top 10 significant Cellular Compartments (CC), based on a gene list using a cutoff of FDR<0.001. It should look like the one below.
+
+<div class="answer"><table class="answer"><tr><td class="answer">
+**Answer:** 
+```{r, echo=T, eval=F}
+# Create the topGOdata object:
+GOobj <- new("topGOdata",
+             description = "Simple session", # just a name, can be changed
+             ontology = "CC", # set to BP, MF, or CC
+             allGenes = setNames(diffExpRes$FDR, diffExpRes$ensembl_gene_id), # named numeric vector
+             geneSel = function(x) x<0.001, # a function to select genes from the allGenes vector
+             nodeSize = 10, # remove GO-terms with less than this number of genes
+             mapping = "org.Mm.eg.db", # annotation database
+             ID = "ensembl", # gene ID used as names in allGenes vector
+             annot = annFUN.org) 
+# Run GO-term enrichment analysis:
+resultFisher <- runTest(GOobj, algorithm = "classic", statistic = "fisher")
+# Plot results using the GO hierarchical DAG:
+showSigOfNodes(GOobj, score(resultFisher), firstSigNode=10, useInfo ='all')
+```
+</td></tr></table><br></div> 
+
+```{r, echo=F, message=F, results="hide"}
+
+### NOTE: this code is replicated in the chunk above for html preview reasons ###
+
+# Create the topGOdata object:
+GOobj <- new("topGOdata",
+             description = "Simple session", # just a name, can be changed
+             ontology = "CC", # set to BP, MF, or CC
+             allGenes = setNames(diffExpRes$FDR, diffExpRes$ensembl_gene_id), # named numeric vector
+             geneSel = function(x) x<0.001, # a function to select genes from the allGenes vector
+             nodeSize = 10, # remove GO-terms with less than this number of genes
+             mapping = "org.Mm.eg.db", # annotation database
+             ID = "ensembl", # gene ID used as names in allGenes vector
+             annot = annFUN.org) 
+# Run GO-term enrichment analysis:
+resultFisher <- runTest(GOobj, algorithm = "classic", statistic = "fisher")
+# Plot results using the GO hierarchical DAG:
+showSigOfNodes(GOobj, score(resultFisher), firstSigNode=10, useInfo ='all')
+```
+
+> **Question `r qn<-qn+1;qn`:** Which is the most significant CC GO-term?
+
+<div class="answer"><table class="answer"><tr><td class="answer">
+**Answer:** 
+```{r}
+GenTable(GOobj,resultFisher)
+```
+The 4 first terms in the table are the most significant.
+</td></tr></table><br></div>
+
+
+Piano
+-----
+
+Piano is an R-package for carrying out gene-set analysis (see more info [here](http://sysbio.se/piano)).
+
+`r sn<-sn+1; paste(sn,". ", sep="")` First we need to import some gene-sets. Load GO-terms from [MSigDB](http://software.broadinstitute.org/gsea/msigdb/collections.jsp):
+
+```{r}
+gscGO <- loadGSC("data/GSC/c5.bp.v5.2.symbols.gmt")
+gscGO
+```
+
+The printed info is always good to check. Did the genes get read as genes and the gene-sets as gene-sets? Do the gene-set sizes seem reasonable? This is a way to sanity check that the loading from a file worked as expected. Usually, reading data from a file is a weak point in any workflow and it is good to carefully check that the data in the file got read as intended. These gene-sets are annotated with human gene symbols, which we currently don't have in our data.  
+  
+`r sn<-sn+1; paste(sn,". ", sep="")` Add these IDs to the data:
+
+```{r, message=FALSE}
+bm <- getBM(attributes=c("ensembl_gene_id","hsapiens_homolog_associated_gene_name"),
+            filters="ensembl_gene_id",
+            values=diffExpRes$ensembl_gene_id, # note that now we use all genes here!
+            mart=ensembl)
+bm <- bm[bm[,2]%in%unique(unlist(gscGO)),] # filter for genes in the GO gene-set collection
+head(bm)
+nrow(bm)
+```
+
+> **Question `r qn<-qn+1;qn`:** Are there any duplicates in `bm`? How many? What does this mean?
+
+<div class="answer"><table class="answer"><tr><td class="answer">
+**Answer:** 
+```{r}
+# Duplicated Ensembl IDs:
+sum(duplicated(bm$ensembl_gene_id))
+# Duplicated gene symbols:
+sum(duplicated(bm$hsapiens_homolog_associated_gene_name))
+```
+This means that some Ensembl IDs map to more than one gene symbol, and that multiple Ensemble IDs can map to the same gene symbol.
+</td></tr></table><br></div> 
+
+`r sn<-sn+1; paste(sn,". ", sep="")` Let's take a simple approach and remove all ENSMUS duplicates in `bm`:
+
+```{r, eval=F}
+bm <- bm[!duplicated(bm[,1]),]
+nrow(bm)
+```
+
+> **Question `r qn<-qn+1;qn`:** How many rows did we remove?  
+
+<div class="answer"><table class="answer"><tr><td class="answer">
+**Answer:** 
+```{r}
+10489 - 10243
+```
+
+</td></tr></table><br></div> 
+
+> **Question `r qn<-qn+1;qn`:** How many unique mouse Ensembl IDs could we map to human orthologs? How many unique human orhtologs do we map to? 
+
+<div class="answer"><table class="answer"><tr><td class="answer">
+**Answer:** 
+```{r}
+# How many unique mouse Ensembl IDs could we map to human orthologs?
+length(unique(bm$ensembl_gene_id))
+# How many unique human orhtologs do we map to?
+length(unique(bm$hsapiens_homolog_associated_gene_name))
+```
+
+</td></tr></table><br></div> 
+
+Note that multiple ENSMUS IDs still can map to the same gene symbol!  
+
+`r sn<-sn+1; paste(sn,". ", sep="")` Extract the gene-level statistics that we will use:
+
+```{r}
+# merge diffExpRes and bm:
+d_piano <- merge(diffExpRes, bm, by="ensembl_gene_id", all.x=T, sort=F)
+# avoid duplicating gene-level statistics due to Ensembl ID mapping to multiple symbols:
+d_piano <- d_piano[!duplicated(d_piano[,-ncol(d_piano)]),]
+# get geneNames, pvals and logfc:
+geneNames <- d_piano$hsapiens_homolog_associated_gene_name
+pvals <- d_piano$FDR
+names(pvals) <- geneNames
+logfc <- d_piano$logFC
+names(logfc) <- geneNames
+```
+
+`r sn<-sn+1; paste(sn,". ", sep="")` Inspect the objects we just created (e.g. using `head()`, `View()` and `length()`) so that you know how they look and what they contain.  
+
+We now have the gene-level data in a convenient format and we are ready to continue with the analysis.
+
+### Overrepresentation analysis
+
+First, let's use piano to perform a hypergeometric test, similar to what we did with Enrichr, DAVID, and topGO.  
+
+`r sn<-sn+1; paste(sn,". ", sep="")` Run the following code and read the printed info to understand what it does:
+
+```{r, message=F, warning=F, fig.height=12}
+# Get the gene-list:
+sel <- names(pvals)[pvals<0.001]
+sel <- unique(sel[!is.na(sel)])
+# Run the analysis:
+res <- runGSAhyper(genes=sel, universe=unique(names(pvals)), gsc=gscGO, gsSizeLim=c(20, 200))
+# Visualize results:
+networkPlot(res, class="non", adjusted=T, significance=0.0001, ncharLabel=Inf,
+            nodeSize=c(3,20), edgeWidth=c(1,15), cexLabel=0.7, overlap=20, 
+            scoreColors=c("greenyellow","darkgreen"))
+```
+Here, we use the `networkPlot` function which draws a network for the most significant gene-sets.
+
+> **Question `r qn<-qn+1;qn`:** What does `gsSizeLim=c(20, 200)` in the code above mean?  
+
+<div class="answer"><table class="answer"><tr><td class="answer">
+**Answer:** 
+To only include gene-sets with between 20 and 200 genes in the analysis (after filtering out genes not in the expression data).
+</td></tr></table><br></div> 
+
+> **Question `r qn<-qn+1;qn`:** What do the colors, node-sizes, and edges denote?  
+
+<div class="answer"><table class="answer"><tr><td class="answer">
+**Answer:** 
+Node size corresponds to gene-set size, i.e. number of genes. Edges denote the number of shared genes between gene-sets. Note that gene-sets without edges can also share a few genes, depending on the setting overlap. The color corresponds to the significance.
+</td></tr></table><br></div> 
+
+> **Question `r qn<-qn+1;qn`:** Are the results in line with those from topGO, DAVID, and Enrichr?
+
+<div class="answer"><table class="answer"><tr><td class="answer">
+**Answer:** 
+The results show muscle contraction related terms, synapse organization, and lipid/sterol related processes, so the results appear to be fairly similar.
+</td></tr></table><br></div> 
+
+### Gene-set analysis
+
+Next, we will use piano to perform gene-set analysis, i.e. not the enrichment of a gene-list based on a cut-off, but using all available gene-level statistics. We will use signed (to keep track of fold-change) -log10-pvalues to rank the gene-sets, i.e. `-log10(pvals)*sign(logfc)`.
+
+`r sn<-sn+1; paste(sn,". ", sep="")` Run piano and plot the results:
+
+```{r, message=F, warning=F, results='hide', fig.height=12}
+gsaRes <- runGSA(-log10(pvals)*sign(logfc), geneSetStat="fgsea", gsc=gscGO, gsSizeLim=c(20, 200))
+
+networkPlot(gsaRes, "distinct", "both", adjusted=T, significance=0.05, ncharLabel=Inf,
+            nodeSize=c(3,15), edgeWidth=c(1,8), cexLabel=0.7, overlap=20,
+            scoreColors=c("red", "orange", "yellow", "blue", "lightblue", "lightgreen"))
+```
+
+`r sn<-sn+1; paste(sn,". ", sep="")` Read the printed info to check that the numbers make sense!
+
+> **Question `r qn<-qn+1;qn`:** Look at the network plot, could gene overlap between you gene-sets bias the result interpretation in any way?  
+
+<div class="answer"><table class="answer"><tr><td class="answer">
+**Answer:** 
+There are clusters of gene-sets that share a large portion of genes, i.e. they are in fact quite similar and in extreme cases basically measure the same thing. If these sets are many it is easy to focus the conclusions on the process that those sets represent, in contrast to the processes represented only by single or a few gene-sets. However, this maybe is due to the fact that one process is more fine-grained annotated by e.g. GO. The network plot helps in visualizing this, and one can try to see each cluster as an affected process, regardless of the number of gene-sets it contains.
+</td></tr></table><br></div> 
+
+The network plot can be nice for visualizing your results, but the function `GSAsummaryTable` can be used to get a table of the all the GSA results.  
+
+`r sn<-sn+1; paste(sn,". ", sep="")` Try it together with RStudios `View()` command:
+
+```{r, eval=F}
+View(GSAsummaryTable(gsaRes))
+```
+
+> **Question `r qn<-qn+1;qn`:** What is the top significant GO-term affected by down-regulation and up-regulation, respectively?  
+
+<div class="answer"><table class="answer"><tr><td class="answer">
+**Answer:** 
+Up: GO_SARCOMERE_ORGANIZATION  
+Down: GO_STEROID_METABOLIC_PROCESS
+</td></tr></table><br></div> 
+
+
+`r sn<-sn+1; paste(sn,". ", sep="")` Now run a second GSA, according to the following:
+* This time use the file `data/GSC/c2.cp.v5.2.symbols.gmt`, which contains pathway gene-sets from [MSigDB](http://software.broadinstitute.org/gsea/msigdb/collections.jsp), as a gene-set collection (load it with `loadGSC()`). 
+* This time use the mean method (option `geneSetStat="mean"`) instead of fgsea. 
+* Use only gene-sets containing 10-100 genes.
+
+`r sn<-sn+1; paste(sn,". ", sep="")` Plot the results using a network plot, play around with the options until you think it looks nice and presents the results from the GSA in a good way.
+
+For example it could look something similar to this:
+```{r, message=F, warning=F, results='hide', echo=T, fig.height=12}
+gscCP <- loadGSC("data/GSC/c2.cp.v5.2.symbols.gmt")
+gsaResCP <- runGSA(-log10(pvals)*sign(logfc), geneSetStat="mean", gsc=gscCP, gsSizeLim=c(10,100))
+networkPlot(gsaResCP, "distinct", "both", adjusted=T, significance=0.05, ncharLabel=Inf,
+            nodeSize=c(5,25), edgeWidth=c(1,8), cexLabel=0.7, overlap=5,
+            scoreColors=c("red", "orange", "yellow", "blue", "lightblue", "lightgreen"))
+```
+
+> **Question `r qn<-qn+1;qn`:** Are these results in line with previous results that we have seen in this exercise? Do you feel there is a consistent pattern?
+
+<div class="answer"><table class="answer"><tr><td class="answer">
+**Answer:** 
+Running the piano gene-set analysis on GO-terms show that muscle related processes are affected by up-regulation and that sterol/steroid metabolism is affected by down-regulation. The pathway analysis shows that muscle contraction is affected by up-regulation and that sterol/cholesterol metabolism is affected by down-regulation. This seems to be quite similar to what we saw previously.
+</td></tr></table><br></div> 
+
+It is always good to go back to the gene-level while looking at your final GSA results. Here we will use a heatmap for visualizing gene-level data for selected gene-sets (using one of *many* heatmap functions available for R).
+
+
+`r sn<-sn+1; paste(sn,". ", sep="")` Let's pull out the information we need for a specific gene-set:
+
+```{r}
+# Get genes for a specific gene-set:
+selGenes <- names(geneSetSummary(gsaRes, "GO_STEROID_BIOSYNTHETIC_PROCESS")$geneLevelStats)
+
+# Merge with the diffexp result table:
+selTab <- d_piano[d_piano$hsapiens_homolog_associated_gene_name%in%selGenes, c(1,3,5,9,10)]
+selTab$log10FDR <- -log10(selTab$FDR)*sign(selTab$logFC)
+# Display this table:
+kable(selTab)
+```
+
+> **Question `r qn<-qn+1;qn`:** Does the table look like you expect it to (did the human to mouse gene symbol matching work, are the signed log10-FDRs consistent with the logFC and FDR columns)?
+
+<div class="answer"><table class="answer"><tr><td class="answer">
+**Answer:** 
+Yes, a visual inspection shows that the mapping is correct.
+</td></tr></table><br></div> 
+
+`r sn<-sn+1; paste(sn,". ", sep="")` Now, let's fetch the count data for these genes and make a heatmap of all the information we have collected:
+
+```{r, fig.height=12, dpi=600}
+# Read in the count data:
+tableCounts <- read.table(file="data/tableCounts", sep="\t", header=TRUE, skip=1)
+rownames(tableCounts) <- tableCounts[,1]
+tableCounts <- tableCounts[,7:12]
+colnames(tableCounts) <- c("KO_1","KO_2", "KO_3", "WT_1", "WT_2", "WT_3");
+
+# Merge count data with the selTab:
+selTab <- merge(selTab, tableCounts, by.x="ensembl_gene_id", by.y=0, all.x=T)
+
+# Plot a heatmap:
+# Row annotation:
+rowann <- list(Significant=ifelse(selTab$FDR<0.05,"yes","no"), Regulation=ifelse(selTab$logFC>0,"Up","Down"))
+rowannCol <- list(Significant=c("black","green"), Regulation=c("blue","red"))
+# Row labels:
+rowlabs <- selTab$mgi_symbol
+rowlabs[duplicated(rowlabs)] <- paste(rowlabs[duplicated(rowlabs)]," ")
+# Plot:
+aheatmap(selTab[,7:12], scale="row", annRow=rowann, annColors=rowannCol, 
+         labRow=rowlabs,
+         txt=selTab[,7:12])
+```
+
+Note that here we scale the rows so the colors will be visualizing the difference for each gene specifically, but is not comparable across genes. Therefore we also include the actual counts in each heatmap cell. Also, note that these are raw counts. As an alternative we could have plotted normalized CPMs (counts per million) using the command:
+
+```{r}
+cpms <- cpm(calcNormFactors(DGEList(tableCounts), method='TMM'))
+```
+
+Try this if you have time!
+
+> **Question `r qn<-qn+1;qn`:** Why are the rows and columns reordered?
+
+<div class="answer"><table class="answer"><tr><td class="answer">
+**Answer:** 
+A clustering is performed on both the columns and rows in order to group genes and samples with similar patterns.
+</td></tr></table><br></div> 
+
+`r sn<-sn+1; paste(sn,". ", sep="")` Make a heatmap without the scaling.
+
+> **Question `r qn<-qn+1;qn`:** Does it look "better", what is the drawback/benefit?
+
+<div class="answer"><table class="answer"><tr><td class="answer">
+**Answer:** 
+```{r}
+aheatmap(selTab[,7:12], scale="none", annRow=rowann, annColors=rowannCol, 
+         labRow=rowlabs,
+         txt=selTab[,7:12])
+```
+Since a few genes have very high counts, it becomes difficult to see the patterns for the remaining genes.  
+One can take the log of the counts to partly alleviate this:
+
+```{r}
+aheatmap(log10(selTab[,7:12]), scale="none", annRow=rowann, annColors=rowannCol, 
+         labRow=rowlabs,
+         txt=selTab[,7:12])
+```
+
+</td></tr></table><br></div> 
+
+`r sn<-sn+1; paste(sn,". ", sep="")` Change the row-labels to mouse ENSEMBL IDs.
+
+<div class="answer"><table class="answer"><tr><td class="answer">
+**Answer:** 
+```{r}
+# Row labels:
+rowlabs <- selTab$ensembl_gene_id
+rowlabs[duplicated(rowlabs)] <- paste(rowlabs[duplicated(rowlabs)]," ")
+# Plot:
+aheatmap(selTab[,7:12], scale="row", annRow=rowann, annColors=rowannCol, 
+         labRow=rowlabs,
+         txt=selTab[,7:12])
+```
+
+</td></tr></table><br></div> 
+
+> **Question `r qn<-qn+1;qn`:** Given the count data for these genes, does the differential expression results make sense, as indicated by the column annotation columns? Any specific genes that you are concerned about?  
+
+<div class="answer"><table class="answer"><tr><td class="answer">
+**Answer:** 
+These are the genes belonging to GO_STEROID_BIOSYNTHETIC_PROCESS, which was shown to be affected by down-regulation in the gene-set analysis. Here we can see that a high portion of the genes are signifcant, and that the vast majority of significant genes are in fact down-regulated. Looking at the count data (the actual heatmap) one can also see a pattern of blue to the left (KO) and red to the right (WT), indicating a lower expression of these genes in the KO:s.
+</td></tr></table><br></div> 
+
+> **Question `r qn<-qn+1;qn`:** Would you say from looking at the heatmap, that in general steroid biosynthesis is down-regulated or up-regulated? Does your answer reflect the GSA results as seen in the network plot above?
+
+<div class="answer"><table class="answer"><tr><td class="answer">
+**Answer:** 
+Down-regulated. It does reflect the network plot results.
+</td></tr></table><br></div> 
+
+`r sn<-sn+1; paste(sn,". ", sep="")` Spot-check some of these genes to see what their functions are (Google search or similar).
+
+> **Question `r qn<-qn+1;qn`:** Are these genes actually involved in steroid biosynthesis? Are you confident enough from the data and analysis results to say anything about how YAP/TAZ knockout affects this biological process?
+
+<div class="answer"><table class="answer"><tr><td class="answer">
+**Answer:** 
+I spot checked ACAA2 (involved in fatty acid beta-oxidation), SCARB1 (receptor for high density lipoprotein cholesterol, HDL), HMGCR (rate-limiting enzyme for cholesterol synthesis). One could check more, but at least from these it seems correct.  
+
+The paper from where this data is taken also reports that YAP/TAZ regulate expression of lipid synthetic enzymes and found down-regulation of lipid and sterol biosynthesis in the KO:s (see e.g. [Figure 6](http://www.nature.com/neuro/journal/v19/n7/full/nn.4316.html)).
+</td></tr></table><br></div> 
+
+`r sn<-sn+1; paste(sn,". ", sep="")` If you have time, do a similar heatmap but for another gene-set of your choice.
+
+
+Session info
+============
+This page was generated using the following R session:
+```{r, echo=F}
+sessionInfo()
+```
+
