@@ -167,7 +167,7 @@ Enrichr
 
 As an alternative to DAVID we can try [Enrichr](http://amp.pharm.mssm.edu/Enrichr/). This page takes human gene symbols as input, so first we need to translate our mouse Ensembl IDs to that. This can be done in many ways, one way is to use the `biomaRt` package (find a user guide [here](http://bioconductor.org/packages/release/bioc/vignettes/biomaRt/inst/doc/biomaRt.html) or type `vignette("biomaRt")`):
 
-```{r}
+```{r, message=FALSE}
 # Use biomaRt to translate the mouse genes into human orthologs:
 # Select the Ensembl BioMart database
 ensembl <- useMart("ENSEMBL_MART_ENSEMBL")
@@ -260,7 +260,7 @@ This means that some Ensembl IDs map to more than one gene symbol, and that mult
 
 <div class="answer"><table class="answer"><tr><td class="answer">
 **Answer:** 
-```{r}
+```{r, message=FALSE}
 # Make the query:
 bm <- getBM(attributes=c("ensembl_gene_id","hsapiens_homolog_associated_gene_name",
                          "hsapiens_homolog_perc_id"), # this is what we want to extract 
@@ -476,7 +476,7 @@ The printed info is always good to check. Did the genes get read as genes and th
   
 `r sn<-sn+1; paste(sn,". ", sep="")` Add these IDs to the data:
 
-```{r}
+```{r, message=FALSE}
 bm <- getBM(attributes=c("ensembl_gene_id","hsapiens_homolog_associated_gene_name"),
             filters="ensembl_gene_id",
             values=diffExpRes$ensembl_gene_id, # note that now we use all genes here!
