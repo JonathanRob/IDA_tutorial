@@ -6,6 +6,8 @@ output:
     toc_float:
       collapsed: false
     fig_width: 10
+editor_options: 
+  chunk_output_type: console
 ---
 
 <style type="text/css">
@@ -54,7 +56,7 @@ qn <- sn <- 0
 Setup and load data 
 ===================
 
-The data needed for this exercise is taken from [the RNA-seq exercise](https://scilifelab.github.io/courses/ngsgu/rna_seq/1710/labs/rna_exercise). In particular it comes from [this publication](http://www.nature.com/neuro/journal/v19/n7/abs/nn.4316.html). We will work with the output from the differential expression analysis of KO vs WT. The data files should be in a `data/` subdirectory in your R working directory. You can download the `data/` directory with files [here](data.zip). You can use the files `results_DE.txt` and `tableCounts` that you generated in the RNA-seq exercise, or use the ones availabel in the `data.zip` file. They should be the same :-)
+The data needed for this exercise are the results from the previous differential expression analysis exercise.       We will work with the output from the differential expression analysis of KO vs WT. The data files should be in a `data/` subdirectory in your R working directory. You can download the `data/` directory with files [here](data.zip). You can use the files `results_DE.txt` and `tableCounts` that you generated in the RNA-seq exercise, or use the ones availabel in the `data.zip` file. They should be the same :-)
 
 The idea is that you should go through all the steps in this tutorial and keep track of your code and plots using Rmarkdown. That way, you can include comments and answers to the questions and document your progress.
 
@@ -67,7 +69,7 @@ library(topGO)
 library(biomaRt)
 library(piano)
 library(NMF)
-library(org.Mm.eg.db)
+library(org.Sc.sgd.db)
 library(Rgraphviz)
 library(edgeR)
 ```
@@ -76,19 +78,9 @@ If you are not able to load any of these packages, try to install them, either u
 
 `r sn<-sn+1; paste(sn,". ", sep="")` Start by reading in the differential expression results from the previous exercise:
 ```{r readDE}
-diffExpRes <- read.delim("data/results_DE.txt", stringsAsFactors=F)
-head(diffExpRes[,c(1,3,5,8,9)]) # skip some columns
+diffExpRes <- read.delim('DE_results_glucose.txt', stringsAsFactors=F)
+head(diffExpRes)  # check that our dataframe looks as expected
 ```
-
-
-> **Question `r qn<-qn+1;qn`:** How many genes are significant at a cutoff of FDR<0.001?
-
-<div class="answer"><table class="answer"><tr><td class="answer">
-**Answer:** 
-```{r}
-sum(diffExpRes$FDR<0.001)
-```
-</td></tr></table></div>
 
 
 Web-based enrichment analysis 
@@ -98,9 +90,11 @@ We will start by performing overrepresentation analysis (a.k.a. list enrichment 
 
 `r sn<-sn+1; paste(sn,". ", sep="")` You can use the `write.table` function to print the top significant genes to copy paste into some web browser tools:
 ```{r, results="hide"}
-sel <- diffExpRes$ensembl_gene_id[diffExpRes$FDR<0.001]
-write.table(sel, quote=F, row.names=F, col.names=F)
+gene.index <- diffExpRes$FDR<0.001 & abs(diffExpRes$logFC)>3
+selected.genes <- rownames(diffExpRes)[gene.index]
+write.table(selected.genes, quote=F, row.names=F, col.names=F)
 ```
+
 
 DAVID
 -----
@@ -165,128 +159,33 @@ Not 100% exactly the same, since the recognized gene-list is slightly different.
 Enrichr
 -------
 
-As an alternative to DAVID we can try [Enrichr](http://amp.pharm.mssm.edu/Enrichr/). This page takes human gene symbols as input, so first we need to translate our mouse Ensembl IDs to that. This can be done in many ways, one way is to use the `biomaRt` package (find a user guide [here](http://bioconductor.org/packages/release/bioc/vignettes/biomaRt/inst/doc/biomaRt.html) or type `vignette("biomaRt")`):
+As an alternative to DAVID we can try [Enrichr](https://amp.pharm.mssm.edu/YeastEnrichr/). This page takes gene symbols (names) as input, so first we need to translate our yeast Ensembl IDs to gene symbols. This can be done in many ways, one way is to use the `org.Sc.sgd.db` package (find a user manual [here](https://bioconductor.org/packages/release/data/annotation/manuals/org.Sc.sgd.db/man/org.Sc.sgd.db.pdf)):
 
-```{r, message=FALSE}
-# Use biomaRt to translate the mouse genes into human orthologs:
-# Select the Ensembl BioMart database
-ensembl <- useMart("ENSEMBL_MART_ENSEMBL")
-# Select the mouse dataset and update the Mart object: 
-ensembl <- useDataset("mmusculus_gene_ensembl", mart=ensembl)
-# Make the query:
-bm <- getBM(attributes=c("ensembl_gene_id","hsapiens_homolog_ensembl_gene"), # this is what we want to extract 
-            filters="ensembl_gene_id", # this determines the filter
-            values=sel, # this are the values to filter for (get only the genes in our list)
-            mart=ensembl)
-head(bm)
+```{r}
+# retrieve the org.Sc.sgd.db gene name mapping information
+x <- org.Sc.sgdGENENAME
+
+# determine which genes are mapped to a name
+mapped_genes <- mappedkeys(x)
+
+# keep only entries with a name mapping
+xmapped <- as.list(x[mapped_genes])
+
+# retrieve names for our genes of interest
+selected.gene.names <- xmapped[selected.genes]
+
+# "flatten" the list into a vector, and remove empty entries
+selected.gene.names <- unlist(selected.gene.names, use.names=F)
 ```
 
-As you can see, the above code gave us a map between mouse and human ensembl gene IDs. But this is not exactly what we wanted, we need human gene *symbols*.   
-  
-`r sn<-sn+1; paste(sn,". ", sep="")` Change the `attributes` argument to the proper setting. 
 
-Use the function `listAttributes(ensembl)` to see all possible options. Hint: if there are too many options to go through you can use `grep` to pull out the relevant ones, e.g.:
-
+`r sn<-sn+1; paste(sn,". ", sep="")` Print this as a vector of gene names that can easily be copied:
 ```{r, results="hide"}
-tmp <- listAttributes(ensembl)
-tmp[grep("Human",tmp[,2]),]
+write.table(selected.gene.names, quote=F, row.names=F, col.names=F)
 ```
 
-If you are working in RStudio you can also use the convenient command `View` and then search for *human*, e.g.:
 
-```{r, eval=F}
-View(listAttributes(ensembl))
-```
-
-Try it also for the `bm` object. For future reference, note that you can also use `listDatasets(ensembl)` to see which datasetes you can choose from, try it! 
-
-> **Question `r qn<-qn+1;qn`:** How many of the genes in our selected list have gene symbols?  
-
-<div class="answer"><table class="answer"><tr><td class="answer">
-**Answer:** 
-```{r}
-# Make the query:
-bm <- getBM(attributes=c("ensembl_gene_id","hsapiens_homolog_associated_gene_name"), # this is what we want to extract 
-            filters="ensembl_gene_id", # this determines the filter
-            values=sel, # this are the values to filter for (get only the genes in our list)
-            mart=ensembl)
-head(bm)
-```
-```{r}
-# subset to the rows were the gene-symbol is >1 characters:
-tmp <- bm[nchar(bm[,2])>1,]
-# How many unique Ensembl IDs?
-length(unique(tmp$ensembl_gene_id))
-```
-</td></tr></table><br></div> 
-
-`r sn<-sn+1; paste(sn,". ", sep="")` Get familiar with the `duplicated` and `unique` functions:
-
-```{r}
-# A vector to test stuff on:
-tmp <- c(1,2,2,3,4,4,4,5)
-# Get unique elements:
-unique(tmp)
-# Which elements are duplicated?
-duplicated(tmp)
-# How many duplicates are there:
-sum(duplicated(tmp))
-# Which are the duplicated elements:
-tmp[duplicated(tmp)]
-# Which are the unique duplicated elements:
-unique(tmp[duplicated(tmp)])
-```
-
-Make sure you understand how these two functions work and what they do, then move ahead with the following steps and questions:
-
-> **Question `r qn<-qn+1;qn`:** Are there duplicated Ensembl IDs or gene symbols in the list for Enrichr (`bm`)? How can this affect the results that we get?
-
-<div class="answer"><table class="answer"><tr><td class="answer">
-**Answer:** 
-```{r}
-# Duplicated Ensembl IDs:
-sum(duplicated(bm$ensembl_gene_id))
-# Duplicated gene symbols:
-sum(duplicated(bm$hsapiens_homolog_associated_gene_name))
-```
-This means that some Ensembl IDs map to more than one gene symbol, and that multiple Ensemble IDs can map to the same gene symbol.
-
-</td></tr></table><br></div> 
-
-`r sn<-sn+1; paste(sn,". ", sep="")` Now, run `getBM` again, this time also adding information about % identity between mouse and human genes. 
-`r sn<-sn+1; paste(sn,". ", sep="")` Make a boxplot of the % identity for our gene list. Hint: try `?boxplot` if you are unsure about this. Try a histogram as well (`hist()`)!
-
-> **Question `r qn<-qn+1;qn`:** Looking at the boxplot, are there any reasons to be concerned?  
-
-<div class="answer"><table class="answer"><tr><td class="answer">
-**Answer:** 
-```{r, message=FALSE}
-# Make the query:
-bm <- getBM(attributes=c("ensembl_gene_id","hsapiens_homolog_associated_gene_name",
-                         "hsapiens_homolog_perc_id"), # this is what we want to extract 
-            filters="ensembl_gene_id", # this determines the filter
-            values=sel, # this are the values to filter for (get only the genes in our list)
-            mart=ensembl)
-head(bm)
-boxplot(bm$hsapiens_homolog_perc_id)
-hist(bm$hsapiens_homolog_perc_id, breaks=50)
-```
-There are some genes with very low % identity, one could consider to remove these. The majority of genes have high similarity however, which is good.
-</td></tr></table><br></div> 
-
-> **Question `r qn<-qn+1;qn`:** Which gene in the list has the lowest % identity?
-
-<div class="answer"><table class="answer"><tr><td class="answer">
-**Answer:** 
-```{r}
-idx <- order(bm$hsapiens_homolog_perc_id)
-bm[idx[1],]
-```
-
-</td></tr></table><br></div> 
-
-
-`r sn<-sn+1; paste(sn,". ", sep="")` Paste your list of human gene symbols on the [Enrichr](http://amp.pharm.mssm.edu/Enrichr/) website. Look at Ontologies > GO Biological Process.
+`r sn<-sn+1; paste(sn,". ", sep="")` Paste your list of gene names on the [Enrichr](https://amp.pharm.mssm.edu/YeastEnrichr/) website.
 
 > **Question `r qn<-qn+1;qn`:** Are the results similar to those we got from DAVID?
 
@@ -326,138 +225,6 @@ The list we have used contains both up- and down-regulated genes, so we have not
 
 Enrichment analysis in R
 ========================
-
-Visualizing GO-terms with TopGO
--------------------------------
-
-Above, we have looked at some different types of gene-set collections, but a lot of focus has been on GO-terms.  
-
-`r sn<-sn+1; paste(sn,". ", sep="")` Use the internet to learn about what GO-terms are (e.g. [Wikipedia](https://en.wikipedia.org/wiki/Gene_ontology) or [here](http://geneontology.org/page/ontology-structure)).
-
-> **Question `r qn<-qn+1;qn`:** What are the three main domains/ontologies?  
-
-<div class="answer"><table class="answer"><tr><td class="answer">
-**Answer:** 
-Biological process, Molecular function, Cellular compartment.
-</td></tr></table><br></div> 
-
-> **Question `r qn<-qn+1;qn`:** By whom and how are GO-terms maintained/defined/updated? 
-
-<div class="answer"><table class="answer"><tr><td class="answer">
-**Answer:** 
-The Gene Ontology Consortium. But edits can and are submitted by the research community.
-</td></tr></table><br></div> 
-
-> **Question `r qn<-qn+1;qn`:** What is the evidence code?  
-
-<div class="answer"><table class="answer"><tr><td class="answer">
-**Answer:** 
-A description denoting the type of evidence underlying a specific annotation.
-</td></tr></table><br></div> 
-
-> **Question `r qn<-qn+1;qn`:** How are GO-terms connected to each other?
-
-<div class="answer"><table class="answer"><tr><td class="answer">
-**Answer:** 
-GO-terms are connected in a hierarchical structure with increasing specificity. A term can however have more than one parent term.
-</td></tr></table><br></div> 
-
-We can use e.g. the `topGO` package to visualize gene-set analysis results on the GO hierarchy network ([topGO manual](https://bioconductor.org/packages/release/bioc/vignettes/topGO/inst/doc/topGO.pdf)).  
-
-`r sn<-sn+1; paste(sn,". ", sep="")` Run the code below, it takes a short while to complete. Meanwhile, go through the code and understand what it does.
-
-```{r, message=F, results="hide"}
-# Format for topgo - remove genes without ensembl id:
-d_topgo <- diffExpRes[!is.na(diffExpRes$ensembl_gene_id),]
-rownames(d_topgo) <- d_topgo$ensembl_gene_id
-
-# Create the topGOdata object:
-GOobj <- new("topGOdata",
-             description = "Simple session", # just a name, can be changed
-             ontology = "BP", # set to BP, MF, or CC
-             allGenes = setNames(diffExpRes$FDR, diffExpRes$ensembl_gene_id), # named numeric vector
-             geneSel = function(x) x<0.01, # a function to select genes from the allGenes vector
-             nodeSize = 10, # remove GO-terms with less than this number of genes
-             mapping = "org.Mm.eg.db", # annotation database
-             ID = "ensembl", # gene ID used as names in allGenes vector
-             annot = annFUN.org) 
-# Run GO-term enrichment analysis:
-resultFisher <- runTest(GOobj, algorithm = "classic", statistic = "fisher")
-# Plot results using the GO hierarchical DAG:
-showSigOfNodes(GOobj, score(resultFisher), firstSigNode=15, useInfo ='all')
-```
-
-If you save the plot as a PDF it will be easier to zoom in and read the node text. (Sometimes the plotting misbehaves in RStudio, try running `grid.newpage()`, `plot.new()`, and/or `par(mfcol=c(1,1))` if plotting looks weird.)
-
-> **Question `r qn<-qn+1;qn`:** What are the circles and squares denoting?  
-
-<div class="answer"><table class="answer"><tr><td class="answer">
-**Answer:** 
-Rectangles are the significant terms, circles are connected terms. Color reflects significance.
-</td></tr></table><br></div> 
-
-> **Question `r qn<-qn+1;qn`:** Which is the most significant BP GO-term?  
-
-<div class="answer"><table class="answer"><tr><td class="answer">
-**Answer:** 
-```{r}
-GenTable(GOobj,resultFisher)
-```
-Muscle contraction.
-</td></tr></table><br></div> 
-
-
-`r sn<-sn+1; paste(sn,". ", sep="")` Now make a topGO plot for the top 10 significant Cellular Compartments (CC), based on a gene list using a cutoff of FDR<0.001. It should look like the one below.
-
-<div class="answer"><table class="answer"><tr><td class="answer">
-**Answer:** 
-```{r, echo=T, eval=F}
-# Create the topGOdata object:
-GOobj <- new("topGOdata",
-             description = "Simple session", # just a name, can be changed
-             ontology = "CC", # set to BP, MF, or CC
-             allGenes = setNames(diffExpRes$FDR, diffExpRes$ensembl_gene_id), # named numeric vector
-             geneSel = function(x) x<0.001, # a function to select genes from the allGenes vector
-             nodeSize = 10, # remove GO-terms with less than this number of genes
-             mapping = "org.Mm.eg.db", # annotation database
-             ID = "ensembl", # gene ID used as names in allGenes vector
-             annot = annFUN.org) 
-# Run GO-term enrichment analysis:
-resultFisher <- runTest(GOobj, algorithm = "classic", statistic = "fisher")
-# Plot results using the GO hierarchical DAG:
-showSigOfNodes(GOobj, score(resultFisher), firstSigNode=10, useInfo ='all')
-```
-</td></tr></table><br></div> 
-
-```{r, echo=F, message=F, results="hide"}
-
-### NOTE: this code is replicated in the chunk above for html preview reasons ###
-
-# Create the topGOdata object:
-GOobj <- new("topGOdata",
-             description = "Simple session", # just a name, can be changed
-             ontology = "CC", # set to BP, MF, or CC
-             allGenes = setNames(diffExpRes$FDR, diffExpRes$ensembl_gene_id), # named numeric vector
-             geneSel = function(x) x<0.001, # a function to select genes from the allGenes vector
-             nodeSize = 10, # remove GO-terms with less than this number of genes
-             mapping = "org.Mm.eg.db", # annotation database
-             ID = "ensembl", # gene ID used as names in allGenes vector
-             annot = annFUN.org) 
-# Run GO-term enrichment analysis:
-resultFisher <- runTest(GOobj, algorithm = "classic", statistic = "fisher")
-# Plot results using the GO hierarchical DAG:
-showSigOfNodes(GOobj, score(resultFisher), firstSigNode=10, useInfo ='all')
-```
-
-> **Question `r qn<-qn+1;qn`:** Which is the most significant CC GO-term?
-
-<div class="answer"><table class="answer"><tr><td class="answer">
-**Answer:** 
-```{r}
-GenTable(GOobj,resultFisher)
-```
-The 4 first terms in the table are the most significant.
-</td></tr></table><br></div>
 
 
 Piano
