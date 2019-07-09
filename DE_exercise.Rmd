@@ -56,9 +56,9 @@ qn <- sn <- 0
 Setup and load data 
 ===================
 
-This exercise will use unpublished RNA-Seq data (gene counts) from cultures of *Saccharomyces cerevisiae* before and after pheramone treatment, and should be in the `data/` subdirectory in your R working directory. 
+This exercise will use unpublished RNA-Seq data (gene counts) from cultures of *Saccharomyces cerevisiae* before and after pheromone treatment, and should be in the `data/` subdirectory in your R working directory. 
 
-The `gene_counts_glucose.txt` dataset corresponds to glucose as the carbon source, whereas the `gene_counts_ethanol.txt` dataset used ethanol. Each dataset includes 6 samples prior to pheramone treatment, and several samples (24 for glucose, 15 for ethanol) after treatment.
+The `gene_counts_glucose.txt` dataset corresponds to glucose as the carbon source, whereas the `gene_counts_ethanol.txt` dataset used ethanol. Each dataset includes 6 samples prior to pheromone treatment, and several samples (24 for glucose, 15 for ethanol) after treatment.
 
 `r sn<-sn+1; paste(sn,". ", sep="")` Start R and use `setwd()` (or Session > Set Working Directory > Choose Directory... from the top menu bar) to change the working directory to the `IDA_exercise/` directory, which should contain a directory named `data/`.
 
@@ -79,10 +79,10 @@ If you are not able to load any of these packages, try to install them, either u
 `r sn<-sn+1; paste(sn,". ", sep="")` Begin by loading the count data corresponding to the experiment of interest (glucose or ethanol conditions):
 ```{r loadcounts}
 # load ethanol data
-count.data <- read.delim("data/gene_counts_ethanol.txt", stringsAsFactors=F, row.names=1)
+#count.data <- read.delim("data/gene_counts_ethanol.txt", stringsAsFactors=F, row.names=1)
 
 # load glucose data
-#count.data <- read.delim("data/gene_counts_glucose.txt", stringsAsFactors=F, row.names=1)
+count.data <- read.delim("data/gene_counts_glucose.txt", stringsAsFactors=F, row.names=1)
 
 # preview the first few rows of the data
 head(count.data)
@@ -111,7 +111,7 @@ Another package that is commonly used for DE analysis is [DESeq2](https://biocon
 edgeR
 -----
 
-We want to determine genes that are differentially expressed between two groups - in this case, between "untreated" and "pheramone-treated" samples, which are indicated by column names beginning with a "U" or "P", respectively. We can take a quick look at the column names to see what samples we have:
+We want to determine genes that are differentially expressed between two groups - in this case, between "untreated" and "pheromone-treated" samples, which are indicated by column names beginning with a "U" or "P", respectively. We can take a quick look at the column names to see what samples we have:
 ```{r}
 colnames(count.data)
 ```
@@ -119,7 +119,7 @@ colnames(count.data)
 
 `r sn<-sn+1; paste(sn,". ", sep="")` Generate a factor specifying the group to which each sample belongs:
 ```{r}
-sample.groups <- factor(startsWith(colnames(count.data), 'P'), labels=c('untreated','pheramone'))
+sample.groups <- factor(startsWith(colnames(count.data), 'P'), labels=c('untreated','pheromone'))
 
 # check that we set up the groups correctly
 data.frame(sample=colnames(count.data), groups=sample.groups)
@@ -146,7 +146,7 @@ y <- y[keep, , keep.lib.sizes=F]
 
 The `filterByExpr` function will only keep genes that have at least `min.count` counts per million (CPM) in at least `X` samples, where `X` is the number of samples in the smallest group (the `untreated` group, in this case).
 
-The 'keep.lib.sizes=F' argument specifies that we want to recalculate the sample library sizes after removing the low-count genes from the data.
+The `keep.lib.sizes=F` argument specifies that we want to recalculate the sample library sizes after removing the low-count genes from the data.
 
 
 `r sn<-sn+1; paste(sn,". ", sep="")` Calculate "normalization factors" for each sample, to normalize by RNA composition:
@@ -163,7 +163,7 @@ y$samples
 
 
 `r sn<-sn+1; paste(sn,". ", sep="")` Estimate the dispersion across all genes:
-```{r}
+```{r, results="hide"}
 y <- estimateDisp(y)
 ```
 
@@ -188,7 +188,7 @@ res.table$FDR <- p.adjust(et$table$PValue, 'BH')  # BH = Benjamini-Hochberg meth
 
 `r sn<-sn+1; paste(sn,". ", sep="")` Export the results table to a .csv file:
 ```{r, eval=F}
-write.csv(res.table, file = 'DE_results_EtOH.csv')
+write.table(res.table, file = 'DE_results_glucose.txt', quote=F, sep='\t')
 ```
 
 
