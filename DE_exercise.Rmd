@@ -43,18 +43,18 @@ table.answer, td.answer {
    width: 100%;
 }
 
-div.answer { display: none;}
+div.answer { display: true;}
 
 </style>
 
 
 ```{r setup, include=F}
-knitr::opts_chunk$set(echo = TRUE, tidy=F, eval=T, cache=F)
+knitr::opts_chunk$set(echo = TRUE, tidy=F, eval=T, cache=T)
 qn <- sn <- 0
 ```
 
-Setup and load data 
-===================
+R session setup
+===============
 
 This exercise will use unpublished RNA-Seq data (gene counts) from cultures of *Saccharomyces cerevisiae* before and after pheromone treatment, and should be in the `data/` subdirectory in your R working directory. 
 
@@ -76,25 +76,26 @@ library(edgeR)
 
 If you are not able to load any of these packages, try to install them, either using `biocLite()` (first you need to run `source("http://www.bioconductor.org/biocLite.R")`) or `install.packages()`. If something fails, try to understand the error message and fix it. If you get stuck, ask for help :)  
 
+
+Load data
+=========
+
 `r sn<-sn+1; paste(sn,". ", sep="")` Begin by loading the count data corresponding to the experiment of interest (glucose or ethanol conditions):
 ```{r loadcounts}
-# load ethanol data
-#count.data <- read.delim("data/gene_counts_ethanol.txt", stringsAsFactors=F, row.names=1)
-
-# load glucose data
 count.data <- read.delim("data/gene_counts_glucose.txt", stringsAsFactors=F, row.names=1)
+#count.data <- read.delim("data/gene_counts_ethanol.txt", stringsAsFactors=F, row.names=1)
 
 # preview the first few rows of the data
 head(count.data)
 ```
 
 
-> **Question `r qn<-qn+1;qn`:** _____?
+> **Question `r qn<-qn+1;qn`:** Blah blah blah?
 
 <div class="answer"><table class="answer"><tr><td class="answer">
 **Answer:** 
 ```{r}
-#sum(diffExpRes$FDR<0.001)
+nrow(count.data)
 ```
 </td></tr></table></div>
 
@@ -108,8 +109,8 @@ We will perform a differential expression (DE) analysis using the [edgeR](https:
 Another package that is commonly used for DE analysis is [DESeq2](https://bioconductor.org/packages/release/bioc/html/DESeq2.html), which has a very nice [User Guide](https://bioconductor.org/packages/release/bioc/vignettes/DESeq2/inst/doc/DESeq2.html). Although DESeq2 will not be covered in this exercise, we encourage you to check it out sometime.
 
 
-edgeR
------
+Data setup and exploration
+--------------------------
 
 We want to determine genes that are differentially expressed between two groups - in this case, between "untreated" and "pheromone-treated" samples, which are indicated by column names beginning with a "U" or "P", respectively. We can take a quick look at the column names to see what samples we have:
 ```{r}
@@ -138,6 +139,9 @@ plotMDS(y)
 ```
 
 
+Filtering and normalization
+---------------------------
+
 `r sn<-sn+1; paste(sn,". ", sep="")` Filter (remove) low-count genes from the count data:
 ```{r}
 keep <- filterByExpr(y, min.count = 10)
@@ -162,6 +166,9 @@ y$samples
 ```
 
 
+Dispersion estimation
+---------------------
+
 `r sn<-sn+1; paste(sn,". ", sep="")` Estimate the dispersion across all genes:
 ```{r, results="hide"}
 y <- estimateDisp(y)
@@ -173,18 +180,24 @@ plotBCV(y)
 ```
 
 
+Test for differential expression
+--------------------------------
+
 `r sn<-sn+1; paste(sn,". ", sep="")` Now we can test for DE genes using the `exactTest` function:
 ```{r}
 et <- exactTest(y)
 topTags(et)  # inspect the top-DE genes
 ```
 
+
+Export results
+--------------
+
 The table of DE results is saved in `et$table`, but it does not contain the FDR-adjusted p-values. We can add this using the `p.adjust` function:
 ```{r}
 res.table <- et$table
 res.table$FDR <- p.adjust(et$table$PValue, 'BH')  # BH = Benjamini-Hochberg method
 ```
-
 
 `r sn<-sn+1; paste(sn,". ", sep="")` Export the results table to a .csv file:
 ```{r, eval=F}
