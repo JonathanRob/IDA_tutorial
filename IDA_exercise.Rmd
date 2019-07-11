@@ -49,7 +49,7 @@ div.answer { display: none;}
 
 
 ```{r setup, include=F}
-knitr::opts_chunk$set(echo = TRUE, tidy=F, eval=T, cache=F)
+knitr::opts_chunk$set(echo = TRUE, tidy=F, eval=T, cache=T)
 qn <- sn <- 0
 ```
 
@@ -365,7 +365,7 @@ gsaRes <- runGSA(pvals, sign(logfc), geneSetStat="stouffer", gsc=gscGO, gsSizeLi
 For example it could look something similar to this:
 ```{r, message=F, warning=F, echo=T, fig.height=6}
 networkPlot2(gsaRes, "distinct", "both", adjusted=T, significance=0.001, ncharLabel=Inf,
-             nodeSize=c(5,25), edgeWidth=c(2,10), labelSize=20, overlap=10, physics=F,
+             nodeSize=c(5,25), edgeWidth=c(2,10), labelSize=15, overlap=10, physics=F,
              scoreColors=c("red", "orange", "yellow", "blue", "lightblue", "lightgreen"))
 ```
 
@@ -377,8 +377,8 @@ networkPlot2(gsaRes, "distinct", "both", adjusted=T, significance=0.001, ncharLa
 </td></tr></table><br></div> 
 
 Another way to visualize the results instead of the network plot is using a heatmap. Piano's `GSAheatmap` function is an easy way to display the results as a clustered heatmap:
-```{r, message=F, warning=F, results='hide', echo=T, fig.height=16}
-GSAheatmap(gsaRes, adjusted=T, ncharLabel=Inf, cellnote='rank')
+```{r, message=F, warning=F, results='hide', echo=T, fig.height=12}
+GSAheatmap(gsaRes, adjusted=T, ncharLabel=Inf, cellnote='rank', cex=1.4)
 ```
 
 Yet _another_ way to view the results of a GSA (and the gene set collection itself) is through the Piano `exploreGSAresults` function, which uses an rShiny app to enable interactive exploration of your analysis and its results:
@@ -505,9 +505,27 @@ The paper from where this data is taken also reports that YAP/TAZ regulate expre
 
 `r sn<-sn+1; paste(sn,". ", sep="")` Load the Yeast-GEM network as a GSC:
 ```{r}
-gscGO <- loadGSC('data/GSC_yeast/yeastGEM.xml')
+geneMetData <- read.delim('data/GSC_yeast/yeastGEM_gene2met.txt')
+gscGO <- loadGSC(geneMetData)
 gscGO  # take a look
 ```
+
+*Note:* Normally we can load a GSC directly from a GEM .xml (SBML) file using `loadGSC`, but some larger genome-scale models (such as yeast-GEM) can take quite long to load. Therefore, we have provided a pre-processed file `yeastGEM_gene2met.txt` which contains the same information that would have been retrieved from the SBML file.
+
+`r sn<-sn+1; paste(sn,". ", sep="")` Run a reporter metabolite analysis using the yeast-GEM GSC:
+```{r, message=F, warning=F}
+gsaRes <- runGSA(pvals, sign(logfc), geneSetStat="reporter", gsc=gscGO, gsSizeLim=c(20, 200))
+```
+
+`r sn<-sn+1; paste(sn,". ", sep="")` Examine your results using `exploreGSAres`, `GSAheatmap`, or `networkPlot2`:
+```{r, message=F, warning=F, fig.height=6}
+# network plot example:
+networkPlot2(gsaRes, "distinct", "both", adjusted=T, significance=0.05, ncharLabel=Inf,
+             nodeSize=c(10,30), edgeWidth=c(3,10), labelSize=20, overlap=5, physics=T)
+```
+
+
+
 
 
 
