@@ -1,5 +1,7 @@
-/data
 
 *.html
 
 .DS_Store
+
+#exclude the yeast raw gene set collection file
+go_slim_mapping.tab
