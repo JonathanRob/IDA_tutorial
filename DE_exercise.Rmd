@@ -81,7 +81,7 @@ Load data
 =========
 
 `r sn<-sn+1; paste(sn,". ", sep="")` Begin by loading the count data corresponding to the experiment of interest (glucose or ethanol conditions):
-```{r loadcounts}
+```{r}
 count.data <- read.delim('data/gene_counts/gene_counts_glucose.txt', stringsAsFactors=F, row.names=1)
 # count.data <- read.delim('data/gene_counts/gene_counts_ethanol.txt', stringsAsFactors=F, row.names=1)
 
@@ -233,6 +233,141 @@ res.table$FDR <- p.adjust(et$table$PValue, 'BH')  # BH = Benjamini-Hochberg meth
 # note: this command will overwrite the existing pre-generated DE_results_glucose.txt file
 write.table(res.table, file = 'data/DE_results/DE_results_glucose.txt', quote=F, sep='\t')
 ```
+
+
+Data with multiple variables
+============================
+
+In many cases, samples can be classified/grouped by more than one experimental variable/condition. For example, in a clinical trial, we may have unreated and treated subjects, as well as male and female. Often times we may want to look at differences between the different grouping types (untreated vs. treated, and male vs. female), or attempt to prevent factors associated with one variable from influencing our analysis of another. For example, if we are only interested in the effect of the drug treatment, we don't want differences in subject gender to bias the results.
+
+Such cases can be approached using generalized linear models (GLMs). In this case, the variables deemed important by the scientist (that's you) can be included together in a linear model that is fit to the data, thus enabling estimation of expression changes based on those variables.
+
+
+Data preparation and exploration
+--------------------------------
+
+We avoided such a situation in the example above by separating the glucose and ethanol conditions into two separate datasets, which were analyzed individually. But what if we wanted to combine these data together?
+
+`r sn<-sn+1; paste(sn,". ", sep="")` Import both gene count files:
+```{r}
+# load the glucose data, and append column names with a "g"
+glucose.data <- read.delim('data/gene_counts/gene_counts_glucose.txt',
+                           stringsAsFactors=F, row.names=1)
+colnames(glucose.data) <- paste(colnames(glucose.data), 'g', sep='')
+
+# load the ethanol data, and append column names with a "e"
+ethanol.data <- read.delim('data/gene_counts/gene_counts_ethanol.txt',
+                           stringsAsFactors=F, row.names=1)
+colnames(ethanol.data) <- paste(colnames(ethanol.data), 'e', sep='')
+```
+
+
+`r sn<-sn+1; paste(sn,". ", sep="")` Merge the count data by gene IDs (row names):
+```{r}
+# merge datasets (by=0 indicates we merge by row names)
+count.data <- merge(glucose.data, ethanol.data, by=0)
+
+# set the row names as the gene IDs, and remove the "Row.names" column
+row.names(count.data) <- count.data$Row.names
+count.data <- count.data[,-1]
+
+# preview our merged dataframe
+head(count.data)
+```
+
+`r sn<-sn+1; paste(sn,". ", sep="")` Create a `DGEList` object from the `count.data` dataframe:
+```{r}
+y <- DGEList(counts=count.data)
+```
+
+Notice that this time, we did not specify the sample groups when creating our `DGEList`. The group is only specified at this step when dealing with a single variable (as in the example above), which is no longer the case. We will specify the sample grouping assignments in the next step.
+
+Take a look at the multidimensional scaling (MDS) plot (using colors this time):
+```{r}
+plotMDS(y, pch=16, 
+        col=c(rep('red',6), rep('blue',24), rep('orange',6), rep('purple',15)))
+legend(-2.5,-1.3, c('Pheromone Glc', 'Unaffected Glc', 'Pheromone EtOH', 'Unaffected EtOH'),
+       col=c('red','blue','orange','purple'), pch=16, cex=0.9)
+```
+
+`r sn<-sn+1; paste(sn,". ", sep="")` Generate a design matrix to classify each of our samples based on carbon source and pheromone status:
+```{r}
+# specify pheromone and carbon attribute of each sample
+pheromone <- factor(startsWith(colnames(count.data), 'P'), labels=c('unaffected','pheromone'))
+carbon <- factor(endsWith(colnames(count.data), 'e'), labels=c('glucose','ethanol'))
+
+# generate design matrix
+design <- model.matrix(~carbon + pheromone)
+rownames(design) <- colnames(y)
+```
+
+> **Question `r qn<-qn+1;qn`:** Does the design matrix make sense?
+
+<div class="answer"><table class="answer"><tr><td class="answer">
+**Answer:** 
+```{r}
+design[1:10, ]  # look at the first 10 rows
+```
+
+The ones and zeros indicate whether each sample is or is not (respectively) assigned to the group indicated in the column. Although the column names are a bit strange in `design`, we can see that sample `P1g` for example has a zero for `carbonethanol` because it is glucose, not ethanol, and a one for `pheromonepheromone` because it is pheromone-affected. 
+</td></tr></table></div>
+
+`r sn<-sn+1; paste(sn,". ", sep="")` Filter low-count genes from the count data, this time providing our design matrix because sample groups were not specified in the DGEList object:
+```{r}
+keep <- filterByExpr(y, design=design, min.count = 10)
+y <- y[keep, , keep.lib.sizes=F]
+```
+
+`r sn<-sn+1; paste(sn,". ", sep="")` Calculate the normalization factors for each sample:
+```{r}
+y <- calcNormFactors(y)
+```
+
+`r sn<-sn+1; paste(sn,". ", sep="")` Estimate the dispersion across all genes:
+```{r}
+y <- estimateDisp(y, design)
+```
+
+`r sn<-sn+1; paste(sn,". ", sep="")` Take a look at the BCV plot:
+```{r}
+plotBCV(y)
+```
+
+
+We are ready to fit our GLM to the count data. To do this, we will use the `glmQLFit` function, which fits a quasi-likelihood negative binomial model to the count data.
+
+`r sn<-sn+1; paste(sn,". ", sep="")` Fit the GLM:
+```{r}
+fit <- glmQLFit(y, design)
+```
+
+Alternatively, we could use the `glmFit` function, which uses a slightly different algorithm. You can find more details in the [edgeR User's Guide](https://bioconductor.org/packages/release/bioc/vignettes/edgeR/inst/doc/edgeRUsersGuide.pdf).
+
+Now we want to use our fitted GLM to estimate the expression change between the pheromone-affected and pheromone-unaffected samples, while ignoring differences associated with the carbon source (glucose vs. ethanol). To do so, we will perfom what is known as "blocking", where the effect of the carbon source difference is "blocked" from our expression change estimation.
+
+`r sn<-sn+1; paste(sn,". ", sep="")` Perform a likelihood test to estimate gene expression changes caused by the pheromone:
+```{r}
+qlf <- glmQLFTest(fit)
+topTags(qlf)  # take a look at the most affected genes
+```
+
+Notice we didn't specify which comparison we wanted to perform (pheromone affected vs. unaffected, or glucose vs. ethanol). This is because by default the `glmQLFTest` function will test the last (3rd) coefficient in the model (`pheromone` in our case). If we instead wanted to look at gene expression changes between glucose and ethanol samples, we would specify this using the `coef` argument: e.g., `qlf <- glmQLFTest(fit, coeff=2)`, because the 2nd coefficient relates to carbon source (the 1st coefficient is simply the intercept, or baseline).
+
+
+> **Question `r qn<-qn+1;qn`:** How do these top-affected genes compare to those in the first analysis?
+
+<div class="answer"><table class="answer"><tr><td class="answer">
+**Answer:** 
+```{r}
+# merge the results tables from both analyses
+merged.results <- merge(qlf$table, et$table, by=0)
+
+# compare the log-transformed p-values with a scatter plot
+plot(-log10(merged.results$PValue.x), -log10(merged.results$PValue.y))
+```
+
+The results certainly show a similar trend, but it's also clear that the results have been substantially affected by our new analysis approach.
+</td></tr></table></div>
 
 
 
