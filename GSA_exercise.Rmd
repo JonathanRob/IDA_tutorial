@@ -108,15 +108,8 @@ DAVID
 `r sn<-sn+1; paste(sn,". ", sep="")` Select and copy the gene list given by the above command and head over to [DAVID](https://david.ncifcrf.gov/).
 `r sn<-sn+1; paste(sn,". ", sep="")` Locate *Functional Annotation* in the left menu and click the [more](https://david.ncifcrf.gov/helps/functional_annotation.html) link and briefly scroll through that page to get an overview of what the Functional Annotation Tool at DAVID does.
 
-> **Question `r qn<-qn+1;qn`:** What is the alternative to the Fisher Exact P-Value used by DAVID?
-
-<div class="answer"><table class="answer"><tr><td class="answer">
-**Answer:** 
-
-DAVID uses the so-called EASE Score. In the contingency table, 1 is subtracted from the number of genes that are both in the gene-list and in the gene-set.
-</td></tr></table><br></div>
-
 `r sn<-sn+1; paste(sn,". ", sep="")` Now go to the [*Functional Annotation* page](https://david.ncifcrf.gov/summary.jsp) and make sure the Upload tab is visible.
+
 `r sn<-sn+1; paste(sn,". ", sep="")` Paste the copied gene-list, select the correct identifier ("ENSEMBL_GENE_ID"), and select the button specifying that this is a Gene List. Click *Submit List*.
 
 > **Question `r qn<-qn+1;qn`:** Were all gene Ensembl IDs recognized? How many were unmapped?
@@ -187,7 +180,7 @@ No, many genes did not map, and therefore cannot be included in the analysis. In
 </td></tr></table><br></div> 
 
 
-> **Question `r qn<-qn+1;qn`:** For the Enrichr and DAVID results so far, can we know whether the identified functions are active/inactive or up/down-regulated in untreated vs pheromone-treated? If not, how can we obtain such information?
+> **Question `r qn<-qn+1;qn`:** For the Enrichr and DAVID results so far, can we know whether the identified functions are active/inactive or up/down-regulated in pheromone unaffected vs affected? If not, how can we obtain such information?
 
 <div class="answer"><table class="answer"><tr><td class="answer">
 **Answer:** 
@@ -393,12 +386,12 @@ rowann <- data.frame(Significant=ifelse(selTab$FDR<0.05,"yes","no"),
 row.names(rowann) <- row.names(selTab)
 # Column annotation:
 colann <- data.frame(Pheromone=ifelse(startsWith(colnames(selTab)[5:ncol(selTab)],'P'),
-                                      'pheromone','untreated'))
+                                      'pheromone','unaffected'))
 row.names(colann) <- colnames(selTab[5:ncol(selTab)])
 # Specify annotation colors:
 ann_colors <- list(Significant = c(no='black', yes='green'),
                    Direction = c(Up='red', Down='blue'),
-                   Pheromone = c(pheromone='yellow', untreated='black'))
+                   Pheromone = c(pheromone='yellow', unaffected='black'))
 # Specify row labels:
 rowlabs <- selTab$Row.names
 # Plot:
@@ -426,7 +419,7 @@ A clustering is performed on the rows to group genes with similar expression pat
 
 <div class="answer"><table class="answer"><tr><td class="answer">
 **Answer:** 
-These are the genes belonging to the "oligosaccharide metabolic process" gene set, which was shown to be affected by down-regulation in the GSA. Here we can see that a high portion of the genes are signifcant, and that the majority of significant genes are in fact down-regulated. Looking at the count data (the actual heatmap) one can also see a pattern of blue to the left (pheromone-treated) and red to the right (untreated), indicating a lower expression of these genes upon pheromone treatment.
+These are the genes belonging to the "oligosaccharide metabolic process" gene set, which was shown to be affected by down-regulation in the GSA. Here we can see that a high portion of the genes are significant, and that the majority of significant genes are in fact down-regulated. Looking at the count data (the actual heatmap) one can also see a pattern of blue to the left (pheromone-affected) and red to the right (unaffected), indicating a lower expression of these genes when pheromone-affected.
 </td></tr></table><br></div> 
 
 > **Question `r qn<-qn+1;qn`:** Would you say from looking at the heatmap, that in general oligosaccharide metabolism is down-regulated or up-regulated? Does your answer reflect the GSA results as seen in the network plot/GSAheatmap above?
@@ -438,7 +431,7 @@ Down-regulated. It does reflect the network plot results.
 
 `r sn<-sn+1; paste(sn,". ", sep="")` Spot-check some of these genes to see what their functions are (Google search or similar).
 
-> **Question `r qn<-qn+1;qn`:** Are these genes actually involved in oligosaccharide metabolism? Are you confident enough from the data and analysis results to say anything about how pheromone treatment affects this biological process?
+> **Question `r qn<-qn+1;qn`:** Are these genes actually involved in oligosaccharide metabolism? Are you confident enough from the data and analysis results to say anything about how the pheromone affects this biological process?
 
 <div class="answer"><table class="answer"><tr><td class="answer">
 **Answer:** 

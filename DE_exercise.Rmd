@@ -56,9 +56,9 @@ qn <- sn <- 0
 R session setup
 ===============
 
-This exercise will use unpublished (!) RNA-Seq data (gene counts) from cultures of *Saccharomyces cerevisiae* with and without pheromone treatment. The count data files are located in the `data/gene_counts/` subdirectory in the `IDA_tutorial` directory.
+This exercise will use unpublished (!) RNA-Seq data (gene counts) from cultures of *Saccharomyces cerevisiae* that have been treated with a pheromone, and are classified as either pheromone-affected and pheromone-unaffected. The count data files are located in the `data/gene_counts/` subdirectory in the `IDA_tutorial` directory.
 
-The `gene_counts_glucose.txt` dataset corresponds to glucose as the carbon source, whereas the `gene_counts_ethanol.txt` dataset used ethanol. Each dataset includes 6 samples after pheromone treatment, and several samples (24 for glucose, 15 for ethanol) without treatment.
+The `gene_counts_glucose.txt` dataset corresponds to glucose as the carbon source, whereas the `gene_counts_ethanol.txt` dataset used ethanol. Each dataset includes 6 pheromone-affected samples, and several pheromone-unaffected samples (24 for glucose, 15 for ethanol).
 
 `r sn<-sn+1; paste(sn,". ", sep="")` Start R and use `setwd()` (or Session > Set Working Directory > Choose Directory... from the top menu bar) to change the working directory to the `IDA_tutorial/` directory, which should contain a subdirectory named `data/`.
 
@@ -112,7 +112,7 @@ Another package that is commonly used for DE analysis is [DESeq2](https://biocon
 Data setup and exploration
 --------------------------
 
-We want to determine genes that are differentially expressed between two groups of samples - in this case, between "untreated" and "pheromone-treated" samples, which we have indicated by column names beginning with a "U" or "P", respectively. We can take a quick look at the column names to see what samples we have:
+We want to determine genes that are differentially expressed between two groups of samples - in this case, between "pheromone-unaffected" and "pheromone-affected" samples, which we have indicated by column names beginning with a "U" or "P", respectively. We can take a quick look at the column names to see what samples we have:
 ```{r}
 colnames(count.data)
 ```
@@ -120,7 +120,7 @@ colnames(count.data)
 
 `r sn<-sn+1; paste(sn,". ", sep="")` Generate a factor specifying the group to which each sample belongs:
 ```{r}
-sample.groups <- factor(startsWith(colnames(count.data), 'P'), labels=c('untreated','pheromone'))
+sample.groups <- factor(startsWith(colnames(count.data), 'P'), labels=c('unaffected','pheromone'))
 
 # check that we set up the groups correctly
 data.frame(sample=colnames(count.data), groups=sample.groups)
@@ -147,11 +147,11 @@ Like PCA, MDS is a dimensionality reduction technique that allows the visualizat
 </td></tr></table></div>
 
 
-> **Question `r qn<-qn+1;qn`:** Does it look like our samples are grouping/separating well based on pheromone treatment? Do you notice any other patterns in the data?
+> **Question `r qn<-qn+1;qn`:** Does it look like our samples are grouping/separating well based on pheromone status? Do you notice any other patterns in the data?
 
 <div class="answer"><table class="answer"><tr><td class="answer">
 **Answer:** 
-Yes, the untreated (U) and pheromone-treated (P) samples clearly separate on the x-axis, indicating a substantial difference in transcriptomic signatures between the two conditions.
+Yes, the pheromone-unaffected (U) and pheromone-affected (P) samples clearly separate on the x-axis, indicating a substantial difference in transcriptomic signatures between the two conditions.
 
 Another feature is a greater spread/difference among U samples than among P samples, but this could in part be due to a larger number of U samples.
 
@@ -160,7 +160,7 @@ Since the U vs. P difference is so great, it can be hard to pick up on any other
 plotMDS(DGEList(counts=count.data[,7:ncol(count.data)]), cex=0.8)
 ```
 
-It looks like there may be some further grouping among the untreated samples...
+It looks like there may be some further grouping among the unaffected (U) samples...
 </td></tr></table></div>
 
 
