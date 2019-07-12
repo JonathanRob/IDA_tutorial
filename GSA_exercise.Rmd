@@ -49,7 +49,7 @@ div.answer { display: true;}
 
 
 ```{r setup, include=F}
-knitr::opts_chunk$set(echo = TRUE, tidy=F, eval=T, cache=T)
+knitr::opts_chunk$set(echo = TRUE, tidy=F, eval=T, cache=F)
 qn <- sn <- 0
 ```
 
