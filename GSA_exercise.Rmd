@@ -65,6 +65,7 @@ library(piano)
 library(pheatmap)
 library(org.Sc.sgd.db)
 library(edgeR)
+library(shiny)
 ```
 
 If you are not able to load any of these packages, try to install them using the following commands:
