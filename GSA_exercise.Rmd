@@ -198,7 +198,7 @@ Piano
 
 Piano is an R-package for performing gene-set analysis (see more info [here](https://varemo.github.io/piano/)).
 
-First we need to import some gene-sets. In this example, we will use gene sets retrieved from the [Saccharomyces Genome Database (SGD)](https://www.yeastgenome.org/). To make things easier, the gene sets have been pre-processed and saved as .RDS files which can be loaded directly into R. If you're interested in how the gene set file was pre-processed, the function can be found [here (NOTE: update this link to point directly at the function!)](https://github.com/JonathanRob/IDA_tutorial).
+First we need to import some gene-sets. In this example, we will use gene sets retrieved from the [Saccharomyces Genome Database (SGD)](https://www.yeastgenome.org/). To make things easier, the gene sets have been pre-processed and saved as .RDS files which can be loaded directly into R. If you're interested in how the gene set file was pre-processed, the script can be found [here](https://github.com/JonathanRob/IDA_tutorial/blob/master/data/GSC/parse_yeast_GOslim.R).
 
 `r sn<-sn+1; paste(sn,". ", sep="")` Load one of the three available gene set collections (biological process, cellular component, or molecular function):
 ```{r}
@@ -350,7 +350,14 @@ Note that the values in the color key and shown in the heatmap cells are *rank* 
 exploreGSAres(gsaRes)
 ```
 
-This function will open up an interactive session in your internet browser. Simply close the tab/window when you're finished to continue working in your R session.  
+This function will open up an interactive session in your internet browser. Simply close the tab/window when you're finished to continue working in your R session.
+
+**NOTE:** If you've had problems with any of the steps above and have been unsuccessful in generating a `gsaRes` object, you can load a pre-generated `gsaRes` object to use with the `exploreGSAres` function:
+```{r, eval=F}
+gsaRes <- readRDS('data/examples/example_gsaRes.rds')
+exploreGSAres(gsaRes)
+```
+
 
 <br>It is always good to go back to the gene-level while looking at your final GSA results. Here we will use a heatmap for visualizing gene-level data for selected gene-sets (using one of *many* heatmap functions available for R).
 
