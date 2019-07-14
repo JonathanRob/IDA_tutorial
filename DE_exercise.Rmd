@@ -354,7 +354,7 @@ topTags(qlf)  # take a look at the most affected genes
 Notice we didn't specify which comparison we wanted to perform (pheromone affected vs. unaffected, or glucose vs. ethanol). This is because by default the `glmQLFTest` function will test the last (3rd) coefficient in the model (`pheromone` in our case). If we instead wanted to look at gene expression changes between glucose and ethanol samples, we would specify this using the `coef` argument: e.g., `qlf <- glmQLFTest(fit, coeff=2)`, because the 2nd coefficient relates to carbon source (the 1st coefficient is simply the intercept, or baseline).
 
 
-> **Question `r qn<-qn+1;qn`:** How do these top-affected genes compare to those in the first analysis?
+> **Question `r qn<-qn+1;qn`:** How do these results compare to those in the first analysis?
 
 <div class="answer"><table class="answer"><tr><td class="answer">
 **Answer:** 
@@ -366,7 +366,7 @@ merged.results <- merge(qlf$table, et$table, by=0)
 plot(-log10(merged.results$PValue.x), -log10(merged.results$PValue.y))
 ```
 
-The results certainly show a similar trend, but it's also clear that the results have been substantially affected by our new analysis approach.
+The results show a similar trend, but it's clear that the results have been substantially affected by the inclusion of the new data and the new analysis approach.
 </td></tr></table></div>
 
 
