@@ -425,8 +425,8 @@ exploreGSAres(gsaRes)
 selGenes <- names(geneSetSummary(gsaRes, "oligosaccharide metabolic process")$geneLevelStats)
 
 # Merge with the diffExp result table:
-selTab <- diffExpRes[rownames(diffExpRes)%in%selGenes, c(1,4)]
-selTab$log10FDR <- -log10(selTab$FDR)*sign(selTab$logFC)
+selTab <- diffExpRes[rownames(diffExpRes) %in% selGenes, c(5,1,4)]
+selTab$log10FDR <- -log10(selTab$FDR) * sign(selTab$logFC)
 
 # Display this table (only showing the top 6 entries here):
 kable(head(selTab))
@@ -449,18 +449,18 @@ rowann <- data.frame(Significant=ifelse(selTab$FDR<0.05,"yes","no"),
                      Direction=ifelse(selTab$logFC>0,"Up","Down"))
 row.names(rowann) <- row.names(selTab)
 # Column annotation:
-colann <- data.frame(Pheromone=ifelse(startsWith(colnames(selTab)[5:ncol(selTab)],'P'),
+colann <- data.frame(Pheromone=ifelse(startsWith(colnames(selTab)[6:ncol(selTab)],'P'),
                                       'pheromone','unaffected'))
-row.names(colann) <- colnames(selTab[5:ncol(selTab)])
+row.names(colann) <- colnames(selTab)[6:ncol(selTab)]
 # Specify annotation colors:
 ann_colors <- list(Significant = c(no='black', yes='green'),
                    Direction = c(Up='red', Down='blue'),
                    Pheromone = c(pheromone='yellow', unaffected='black'))
 # Specify row labels:
-rowlabs <- selTab$Row.names
+rowlabs <- selTab$Name
 # Plot:
-pheatmap(selTab[,5:ncol(selTab)], cluster_cols=F, scale="row",
-         display_numbers=selTab[,5:ncol(selTab)], annotation_row=rowann, 
+pheatmap(selTab[,6:ncol(selTab)], cluster_cols=F, scale="row",
+         display_numbers=selTab[,6:ncol(selTab)], annotation_row=rowann, 
          annotation_col=colann, annotation_colors=ann_colors,
          labels_row=rowlabs)
 ```
