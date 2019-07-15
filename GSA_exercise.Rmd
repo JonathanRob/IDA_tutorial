@@ -53,7 +53,7 @@ knitr::opts_chunk$set(echo = TRUE, tidy=F, eval=T, cache=F)
 qn <- sn <- 0
 ```
 
-Setup and load data 
+R environment setup
 ===================
 
 The data needed for this exercise are the results from the previous differential expression analysis exercise, using the gene counts from glucose conditions (saved as `DE_results_glucose.txt` in the `data/DE_results/` subdirectory within the `IDA_tutorial` directory).
@@ -66,6 +66,7 @@ library(pheatmap)
 library(org.Sc.sgd.db)
 library(edgeR)
 library(shiny)
+library(plotly)
 ```
 
 If you are not able to load any of these packages, try to install them using the following commands:
@@ -82,11 +83,99 @@ install.packages('PACKAGE_NAME_HERE')
 
 If something fails, try to understand the error message and fix it. If you get stuck, ask for help :)  
 
-`r sn<-sn+1; paste(sn,". ", sep="")` Start by loading the differential expression results from the previous exercise:
+
+Load and explore DE results
+===========================
+
+`r sn<-sn+1; paste(sn,". ", sep="")` Start by loading the differential expression (DE) results from the previous exercise:
 ```{r}
 diffExpRes <- read.delim('data/DE_results/DE_results_glucose.txt', stringsAsFactors=F)
 head(diffExpRes)  # take a quick look at our results dataframe
 ```
+
+
+`r sn<-sn+1; paste(sn,". ", sep="")` To avoid problems caused by pvalues of zero, set zero-pvalues to the minimum non-zero value:
+```{r}
+# see how many genes will be affected
+zero.pvals <- diffExpRes$PValue == 0
+sum(zero.pvals)
+
+# update the Pvalue and FDR fields
+min.pval <- min(diffExpRes$PValue[!zero.pvals])
+diffExpRes$PValue[zero.pvals] <- min.pval
+diffExpRes$FDR <- p.adjust(diffExpRes$PValue, method='BH')
+```
+
+> **Question `r qn<-qn+1;qn`:** What problems could p-values of zero cause? Is our method an appropriate fix?
+
+<div class="answer"><table class="answer"><tr><td class="answer">
+**Answer:** 
+The genes with a p-value of zero may actually differ in their significance, but insufficient precision has resulted in identical values. Furthermore, the analysis of p-values often involves log-transformation; since the log of zero is infinity, this tends to cause problems.
+
+The method we used here will result in some loss of resolution between genes with a p-value of zero, and those with the lowest non-zero pvalue. However, the number of genes affected by such a transformation is generally very small relative to the full set of genes.
+</td></tr></table><br></div> 
+
+
+From the data, we would like to extract some biological insight - what is the biological effect that the pheromone is having on the yeast? We could do this by individually exploring some of the top-DE genes between pheromone unaffected and affected. One approach to visualize our DE results and identify some potentially informative genes is using a volcano plot.
+
+A volcano plot is simply a scatter plot of the DE significance vs. fold-change for all genes included in the analysis. The values are log-transformed to improve legibility, i.e., `-log10(FDR)` and `log2(FoldChange)`.
+
+Before we plot our data, we will first translate the Ensembl gene IDs into gene symbols (names) to make them more intuitive. This can be done in many ways, one of which is to use the `org.Sc.sgd.db` package (find a user manual [here](https://bioconductor.org/packages/release/data/annotation/manuals/org.Sc.sgd.db/man/org.Sc.sgd.db.pdf)):
+
+```{r}
+# load the org.Sc.sgd.db gene name mapping information
+id2name <- as.list(org.Sc.sgdGENENAME)
+
+# retrieve names for our gene IDs
+gene.ids <- rownames(diffExpRes)
+gene.names.list <- id2name[gene.ids]
+
+# convert to vector (probably not the most efficient code)
+gene.names <- NULL
+for (i in 1:length(gene.names.list)) {
+  if (!is.character(gene.names.list[[i]])) {
+    # if there is no matching gene name, just use the ID
+    gene.names[i] <- gene.ids[i]
+  } else {
+    # use the first matching name if there are multiple
+    gene.names[i] <- gene.names.list[[i]][1]
+  }
+}
+
+# add the names to our diffExpRes dataframe
+diffExpRes$Name <- gene.names
+```
+
+We will now generate a volcano plot to help explore our results. To make the plot interactive, we will use the `plotly` package in R - more information about this package and the other nice plots it can generate can be found [here](https://plotly-r.com/).
+
+`r sn<-sn+1; paste(sn,". ", sep="")` Generate a volcano plot, where gene names can be seen when hovering over the points:
+```{r, fig.width=6}
+# (Optional) filter genes to avoid large file size
+diffExpRes_subset <- subset(diffExpRes, diffExpRes$FDR < 1e-10)
+
+# generate plot
+plot_ly(data=diffExpRes_subset, x=~logFC, y=~-log10(FDR),
+        type='scatter', mode='markers',
+        text=~Name, hoverinfo='text',
+        marker=list(
+          color='rgba(0, 0, 0, 0.4)',
+          size=8,
+          line=list(
+            color='black',
+            width=1)
+          )
+        )
+```
+
+
+> **Question `r qn<-qn+1;qn`:** What are the function(s) of some of the most differentially expression genes? Does this seem like an efficient way to determine how the pheromone is affecting the yeast?
+
+<div class="answer"><table class="answer"><tr><td class="answer">
+**Answer:** 
+Although individually checking the top-DE genes can provide some initial clues on important pathways/processes that are potentially affected by pheromone exposure, it is generally a very slow and non-systematic approach.
+</td></tr></table><br></div> 
+
+To investigate the DE results of many or all genes collectively, we can use gene-set enrichment or gene-set analysis (GSA) approaches.
 
 
 Web-based enrichment analysis
@@ -133,41 +222,12 @@ DAVID
 Enrichr
 -------
 
-As an alternative to DAVID we can use [Enrichr](https://amp.pharm.mssm.edu/YeastEnrichr/). Note that there are Enrichr versions for other species, such as [Human](https://amp.pharm.mssm.edu/Enrichr/). This page takes gene symbols (names) as input, so first we need to translate our yeast Ensembl IDs to gene symbols. This can be done in many ways, one of which is to use the `org.Sc.sgd.db` package (find a user manual [here](https://bioconductor.org/packages/release/data/annotation/manuals/org.Sc.sgd.db/man/org.Sc.sgd.db.pdf)):
+As an alternative to DAVID we can use [Enrichr](https://amp.pharm.mssm.edu/YeastEnrichr/). Note that there are Enrichr versions for other species, such as [Human](https://amp.pharm.mssm.edu/Enrichr/). Note that this page takes gene symbols (names) as input, NOT gene IDs
 
-```{r}
-# retrieve the org.Sc.sgd.db gene name mapping information
-x <- org.Sc.sgdGENENAME
-
-# determine which genes are mapped to a gene name (gene symbol)
-mapped_genes <- mappedkeys(x)
-
-# keep only entries with a name mapping
-xmapped <- as.list(x[mapped_genes])
-
-# retrieve names for our genes of interest
-selected.gene.names <- xmapped[selected.genes]
-
-# "flatten" the list into a vector, and remove empty entries
-selected.gene.names <- unlist(selected.gene.names, use.names=F)
-```
-
-
-`r sn<-sn+1; paste(sn,". ", sep="")` Print this as a vector of gene names that can easily be copied:
+`r sn<-sn+1; paste(sn,". ", sep="")` Print our selected gene names for use with the Enichr tool:
 ```{r, results="hide"}
-write.table(selected.gene.names, quote=F, row.names=F, col.names=F)
+write.table(diffExpRes$Name[gene.index], quote=F, row.names=F, col.names=F)
 ```
-
-> **Question `r qn<-qn+1;qn`:** Were we able to map all of the gene Ensembl IDs to a gene name?
-
-<div class="answer"><table class="answer"><tr><td class="answer">
-**Answer:**
-```{r}
-length(selected.genes) - length(selected.gene.names)
-```
-No, many genes did not map, and therefore cannot be included in the analysis. In fact, nearly 25% of the genes in this case did not map, which is reason to treat the results with caution. In this case, one should look into alternative Enrichment tools or gene ID conversion approaches to reduce the number of genes that are "lost" in the process.
-</td></tr></table><br></div> 
-
 
 `r sn<-sn+1; paste(sn,". ", sep="")` Paste your list of gene names on the [Enrichr](https://amp.pharm.mssm.edu/YeastEnrichr/) website and click Submit.
 
@@ -225,9 +285,6 @@ names(pvals) <- geneIDs
 
 logfc <- diffExpRes$logFC
 names(logfc) <- geneIDs
-
-# to avoid issues with pvals of zero:
-pvals[pvals == 0] <- min(pvals[pvals > 0])
 ```
 
 `r sn<-sn+1; paste(sn,". ", sep="")` Inspect the objects we just created (e.g. using `head()`, `View()`, or `length()`) so that you know how they look and what they contain.  
@@ -309,8 +366,7 @@ View(GSAsummaryTable(gsaRes))
 
 <div class="answer"><table class="answer"><tr><td class="answer">
 **Answer:** 
-Up: ____
-Down: _____
+(ADD ANSWER)
 </td></tr></table><br></div> 
 
 
@@ -369,7 +425,7 @@ exploreGSAres(gsaRes)
 selGenes <- names(geneSetSummary(gsaRes, "oligosaccharide metabolic process")$geneLevelStats)
 
 # Merge with the diffExp result table:
-selTab <- diffExpRes[rownames(diffExpRes)%in%selGenes,c(1,4)]
+selTab <- diffExpRes[rownames(diffExpRes)%in%selGenes, c(1,4)]
 selTab$log10FDR <- -log10(selTab$FDR)*sign(selTab$logFC)
 
 # Display this table (only showing the top 6 entries here):
