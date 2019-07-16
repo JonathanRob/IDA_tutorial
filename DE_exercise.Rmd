@@ -53,12 +53,22 @@ knitr::opts_chunk$set(echo=T, tidy=F, eval=T, cache=F)
 qn <- sn <- 0
 ```
 
+Introduction
+===============
+
+This exercise will use unpublished (!) RNA Seq data (gene counts) from cultures of *Saccharomyces cerevisiae* of mating type **a** that have been externally treated with a pheromone called 'alpha factor'. In the wild, haploid yeast cells mate via the production of pheromones (Figure 1), which signals their presence to neighboring cells. When cells of the opposite mating type sense each other (via their pheromones) they respond by forming 'shmoos', growth projections that allow cells to make contact and subsequently mate to form a diploid cell. The aim of this work was therefore to find out how pheromone treatment affects cells, using a genome-wide perspective.
+
+```{r pressure, echo=FALSE, fig.cap="**Figure 1** Adapted from: https://en.wikipedia.org/wiki/Mating_of_yeast", out.width = '75%', fig.align='center'}
+knitr::include_graphics("Yeast_mating_scheme.jpg")
+```
+
 R session setup
 ===============
 
-This exercise will use unpublished (!) RNA-Seq data (gene counts) from cultures of *Saccharomyces cerevisiae* that have been treated with a pheromone, and are classified as either pheromone-affected and pheromone-unaffected. The count data files are located in the `data/gene_counts/` subdirectory in the `IDA_tutorial` directory.
 
-The `gene_counts_glucose.txt` dataset corresponds to glucose as the carbon source, whereas the `gene_counts_ethanol.txt` dataset used ethanol. Each dataset includes 6 pheromone-affected samples, and several pheromone-unaffected samples (24 for glucose, 15 for ethanol).
+Data is here is classified as either pheromone-affected or pheromone-unaffected. The count data files are located in the `data/gene_counts/` subdirectory in the `IDA_tutorial` directory.
+
+The `gene_counts_glucose.txt` dataset corresponds to glucose as the carbon source, whereas the `gene_counts_ethanol.txt` dataset used ethanol. This was to show the effect of pheromone on cells  undergoing two different types of metabolism: fermentation (with glucose) or respiration (with ethanol). Each dataset includes 6 pheromone-affected samples, and several pheromone-unaffected samples (24 for glucose, 15 for ethanol).
 
 `r sn<-sn+1; paste(sn,". ", sep="")` Start R and use `setwd()` (or Session > Set Working Directory > Choose Directory... from the top menu bar) to change the working directory to the `IDA_tutorial/` directory, which should contain a subdirectory named `data/`.
 
@@ -104,7 +114,7 @@ nrow(count.data)
 Differential expression analysis
 ================================
 
-We will perform a differential expression (DE) analysis using the [edgeR](https://bioconductor.org/packages/release/bioc/html/edgeR.html) package. This exercise only uses/explains a little of edgeR, so it is strongly encouraged that you take a look at the [edgeR User's Guide](https://bioconductor.org/packages/release/bioc/vignettes/edgeR/inst/doc/edgeRUsersGuide.pdf) for further information.
+We will perform a differential expression (DE) analysis using the [edgeR](https://bioconductor.org/packages/release/bioc/html/edgeR.html) package. This exercise  uses/explains only a little of edgeR, so it is strongly encouraged that you take a look at the [edgeR User's Guide](https://bioconductor.org/packages/release/bioc/vignettes/edgeR/inst/doc/edgeRUsersGuide.pdf) for further information.
 
 Another package that is commonly used for DE analysis is [DESeq2](https://bioconductor.org/packages/release/bioc/html/DESeq2.html), which also has a very nice [User Guide](https://bioconductor.org/packages/release/bioc/vignettes/DESeq2/inst/doc/DESeq2.html). Although DESeq2 will not be covered in this exercise, we encourage you to check it out sometime.
 
@@ -112,7 +122,7 @@ Another package that is commonly used for DE analysis is [DESeq2](https://biocon
 Data setup and exploration
 --------------------------
 
-We want to determine genes that are differentially expressed between two groups of samples - in this case, between "pheromone-unaffected" and "pheromone-affected" samples, which we have indicated by column names beginning with a "U" or "P", respectively. We can take a quick look at the column names to see what samples we have:
+We want to determine which genes are differentially expressed between two groups of samples - in this case, between "pheromone-unaffected" and "pheromone-affected" samples, which we have indicated by column names beginning with a "U" or "P", respectively. We can take a quick look at the column names to see what samples we have:
 ```{r}
 colnames(count.data)
 ```
@@ -132,6 +142,7 @@ data.frame(sample=colnames(count.data), groups=sample.groups)
 y <- DGEList(counts=count.data, group=sample.groups)
 ```
 
+This DGEList object 'holds' the dataset to be analysed by edgeR and the subsequent calculations relevant for the analysis.
 
 Before performing any DE analysis, we can take a look at similarities and differences among different samples using a multidimensional scaling (MDS) plot:
 ```{r}
@@ -143,11 +154,11 @@ plotMDS(y, cex=0.8)  # "cex" sets the label font size
 
 <div class="answer"><table class="answer"><tr><td class="answer">
 **Answer:** 
-Like PCA, MDS is a dimensionality reduction technique that allows the visualization of similarities among individal items in a dataset. Unlike PCA, MDS is non-linear transformation, and involves the minimization of a loss function to arrive at the final set of coordinates.
+Like PCA, MDS is a dimensionality reduction technique that allows the visualization of similarities among individal items in a dataset. Unlike PCA, MDS is a non-linear transformation, and involves the minimization of a loss function to arrive at the final set of coordinates.
 </td></tr></table></div>
 
 
-> **Question `r qn<-qn+1;qn`:** Does it look like our samples are grouping/separating well based on pheromone status? Do you notice any other patterns in the data?
+> **Question `r qn<-qn+1;qn`:** Does it look like our samples are grouping/separating well based on their pheromone status? Do you notice any other patterns in the data?
 
 <div class="answer"><table class="answer"><tr><td class="answer">
 **Answer:** 
@@ -167,11 +178,11 @@ It looks like there may be some further grouping among the unaffected (U) sample
 Filtering and normalization
 ---------------------------
 
-Often times RNA-Seq data will contain low-count genes that are not expressed, or expressed at very low levels in many samples. The data for these genes is essentially noise that does not provide any meaningful information, and should therefore be removed prior to DE analysis.
+Often, RNA Seq data will contain low-count genes that are not expressed, or expressed at very low levels in many samples. The data for these genes is essentially noise that does not provide any meaningful information and should therefore be removed prior to DE analysis.
 
-Although there is no single "correct" approach to remove low-count genes, a common technique involves removing those that are below some threshold in a given fraction of the samples.
+Although there is no single "correct" approach for removing low-count genes, a common technique involves removing those that are below some threshold in a given fraction of the samples.
 
-`r sn<-sn+1; paste(sn,". ", sep="")` Filter (remove) low-count genes from the count data:
+`r sn<-sn+1; paste(sn,". ", sep="")` Filter (remove) low-count genes from the count data, using an arbitrary cut off of 10 reads:
 ```{r}
 keep <- filterByExpr(y, min.count = 10)
 y <- y[keep, , keep.lib.sizes=F]
@@ -182,7 +193,7 @@ The `filterByExpr` function will only keep genes that have at least `min.count` 
 The `keep.lib.sizes=F` argument specifies that we want to recalculate the sample library sizes after removing the low-count genes from the data.
 
 
-<br>The next step is to normalize the data by RNA composition, which is done to address problems caused when the counts in a sample are dominated by a few highly expressed genes. This can cause other genes in the sample to exhibit artificially low count values. The normalization factors calculated using the `calcNormFactors` function are used to scale the counts to avoid such problems.
+<br>The next step is to normalize the data by RNA composition, in order to address problems caused by the counts in a sample being dominated by only a few highly expressed genes. This can cause other genes in the sample to exhibit artificially low count values. The normalization factors calculated using the `calcNormFactors` function are then used to scale the counts to avoid such problems.
 
 `r sn<-sn+1; paste(sn,". ", sep="")` Calculate the normalization factors for each sample:
 ```{r}
@@ -206,8 +217,11 @@ y <- estimateDisp(y)
 We can also view the dispersion estimates using the BCV plot:
 ```{r}
 plotBCV(y)
+
 ```
 
+
+The results of this plot give us an idea about the variance across all genes that are lowly expressed all the way to highly expressed. Normally, the more lowly expressed genes will have larger variation compared to the more highly expressed genes. ("Tagwise" is gene by gene dispersion, "common" is dispersion aross the whole dataset and "trend"  takes groups of similarily expressed genes plot dispersion.)
 
 Test for differential expression
 --------------------------------
@@ -218,6 +232,12 @@ et <- exactTest(y)
 topTags(et)  # inspect the top-DE genes
 ```
 
+> **Question `r qn<-qn+1;qn`:** Take a closer look at these genes (you can use https://www.yeastgenome.org/ for help). Do you see anything interesting related to their functions?
+
+<div class="answer"><table class="answer"><tr><td class="answer">
+**Answer:** 
+Yes, several genes seem to have an unknown function in the *Saccharomyces* Genome Database, which means little is known about them. This could be worth following up, to confirm if these genes have an important role in the pheromone response.
+</td></tr></table></div>
 
 Export results
 --------------
@@ -227,6 +247,8 @@ The table of DE results is saved in `et$table`, but it does not contain the FDR-
 res.table <- et$table
 res.table$FDR <- p.adjust(et$table$PValue, 'BH')  # BH = Benjamini-Hochberg method
 ```
+
+For a brief recap on why FDR adjustment is important, during multiple testing, see here: https://www.explainxkcd.com/wiki/index.php/882:_Significant.
 
 `r sn<-sn+1; paste(sn,". ", sep="")` Export the results table to a .txt file:
 ```{r, eval=T}
@@ -238,9 +260,9 @@ write.table(res.table, file = 'data/DE_results/DE_results_glucose.txt', quote=F,
 Data with multiple variables
 ============================
 
-In many cases, samples can be classified/grouped by more than one experimental variable/condition. For example, in a clinical trial, we may have unreated and treated subjects, as well as male and female. Often times we may want to look at differences between the different grouping types (untreated vs. treated, and male vs. female), or attempt to prevent factors associated with one variable from influencing our analysis of another. For example, if we are only interested in the effect of the drug treatment, we don't want differences in subject gender to bias the results.
+In many cases, samples can be classified/grouped by more than one experimental variable/condition. For example, in a clinical trial, we may have unreated and treated subjects, as well as male and female. Often, we may want to look at differences between the different grouping types (untreated vs. treated, and male vs. female), or attempt to prevent factors associated with one variable influencing our analysis of another. For example, if we are only interested in the effect of the drug treatment, we don't want differences in subject gender to bias the results.
 
-Such cases can be approached using generalized linear models (GLMs). In this case, the variables deemed important by the scientist (that's you) can be included together in a linear model that is fit to the data, thus enabling estimation of expression changes based on those variables.
+Such cases can be approached using generalized linear models (GLMs). In this case, the variables deemed important by the scientist (that's you) can be included together in a linear model, that is fit to the data, thus enabling estimation of expression changes based on those variables.
 
 
 Data setup and exploration
@@ -275,12 +297,13 @@ count.data <- count.data[,-1]
 head(count.data)
 ```
 
-`r sn<-sn+1; paste(sn,". ", sep="")` Create a `DGEList` object from the `count.data` dataframe:
+`r sn<-sn+1; paste(sn,". ", sep="")` As before, create a `DGEList` object from the `count.data` dataframe:
 ```{r}
 y <- DGEList(counts=count.data)
 ```
 
 Notice that this time, we did not specify the sample groups when creating our `DGEList`. The group is only specified at this step when dealing with a single variable (as in the example above), which is no longer the case. We will specify the sample grouping assignments in the next step.
+
 
 `r sn<-sn+1; paste(sn,". ", sep="")` Take a look at the multidimensional scaling (MDS) plot (using colors this time):
 ```{r}
@@ -290,8 +313,15 @@ legend(-2.5,-1.3, c('Pheromone Glc', 'Unaffected Glc', 'Pheromone EtOH', 'Unaffe
        col=c('red','blue','orange','purple'), pch=16, cex=0.9)
 ```
 
+> **Question `r qn<-qn+1;qn`:** What do you see? Are you surprised by this result?
 
-Set up the design matrix
+<div class="answer"><table class="answer"><tr><td class="answer">
+**Answer:** 
+Four separate clusters can be seen. Interestingly the glucose and ethanol samples (both pheromone affected and unaffected groups) don't overlap, suggesting metabolism is having a big impact on gene expression.
+</td></tr></table></div>
+
+
+Data classification
 ------------------------
 
 `r sn<-sn+1; paste(sn,". ", sep="")` Generate a design matrix to classify each of our samples based on carbon source and pheromone status:
@@ -303,6 +333,7 @@ carbon <- factor(endsWith(colnames(count.data), 'e'), labels=c('glucose','ethano
 # generate design matrix
 design <- model.matrix(~carbon + pheromone)
 rownames(design) <- colnames(y)
+
 ```
 
 > **Question `r qn<-qn+1;qn`:** Does the design matrix make sense?
@@ -317,10 +348,10 @@ The ones and zeros indicate whether each sample is or is not (respectively) assi
 </td></tr></table></div>
 
 
-Filtering, normalization, dispersion
+Data filtering, normalization and dispersion
 ------------------------------------
 
-`r sn<-sn+1; paste(sn,". ", sep="")` Filter low-count genes from the count data, this time providing our design matrix because sample groups were not specified in the DGEList object:
+`r sn<-sn+1; paste(sn,". ", sep="")` Filter low-count genes from the count data, this time by providing our design matrix as sample groups were not specified in the DGEList object:
 ```{r}
 keep <- filterByExpr(y, design=design, min.count = 10)
 y <- y[keep, , keep.lib.sizes=F]
@@ -344,7 +375,7 @@ plotBCV(y)
 GLM fitting and DE estimation
 -----------------------------
 
-We are ready to fit our GLM to the count data. To do this, we will use the `glmQLFit` function, which fits a quasi-likelihood negative binomial model to the count data.
+We are now ready to fit our GLM to the count data. To do this, we will use the `glmQLFit` function, which fits a quasi-likelihood negative binomial model to the count data.
 
 `r sn<-sn+1; paste(sn,". ", sep="")` Fit the GLM:
 ```{r}
@@ -358,7 +389,7 @@ Now we want to use our fitted GLM to estimate the expression change between the 
 `r sn<-sn+1; paste(sn,". ", sep="")` Perform a likelihood test to estimate gene expression changes caused by the pheromone:
 ```{r}
 qlf <- glmQLFTest(fit)
-topTags(qlf)  # take a look at the most affected genes
+ # take a look at the most affected genes
 ```
 
 Notice we didn't specify which comparison we wanted to perform (pheromone affected vs. unaffected, or glucose vs. ethanol). This is because by default the `glmQLFTest` function will test the last (3rd) coefficient in the model (`pheromone` in our case). If we instead wanted to look at gene expression changes between glucose and ethanol samples, we would specify this using the `coef` argument: e.g., `qlf <- glmQLFTest(fit, coeff=2)`, because the 2nd coefficient relates to carbon source (the 1st coefficient is simply the intercept, or baseline).
@@ -379,6 +410,14 @@ plot(-log10(merged.results$PValue.x), -log10(merged.results$PValue.y))
 The results show a similar trend, but it's clear that the results have been substantially affected by the inclusion of the new data and the new analysis approach.
 </td></tr></table></div>
 
+Export 
+============
+
+
+`r sn<-sn+1; paste(sn,". ", sep="")` Export the results table to a .txt file:
+```{r, eval=T}
+write.table(qlf$table, file = 'data/DE_results/DE_results_merged.txt', quote=F, sep='\t')
+```
 
 
 Session info
