@@ -61,7 +61,7 @@ This exercise will use unpublished (!) RNA Seq data (gene counts) from cultures 
 ```{r pressure, echo=FALSE, fig.cap="**Figure 1** Adapted from Wikipedia", out.width = '75%', fig.align='center'}
 knitr::include_graphics("Yeast_mating_scheme.jpg")
 ```
-<a href="https://en.wikipedia.org/wiki/Mating_of_yeast" target="_blank">wikipedia</a>
+
 R session setup
 ===============
 
