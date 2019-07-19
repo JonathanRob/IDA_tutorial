@@ -58,10 +58,10 @@ Introduction
 
 This exercise will use unpublished (!) RNA Seq data (gene counts) from cultures of *Saccharomyces cerevisiae* of mating type **a** that have been externally treated with a pheromone called 'alpha factor'. In the wild, haploid yeast cells mate via the production of pheromones (Figure 1), which signals their presence to neighboring cells. When cells of the opposite mating type sense each other (via their pheromones) they respond by forming 'shmoos', growth projections that allow cells to make contact and subsequently mate to form a diploid cell. The aim of this work was therefore to find out how pheromone treatment affects cells, using a genome-wide perspective.
 
-```{r pressure, echo=FALSE, fig.cap="**Figure 1** Adapted from: https://en.wikipedia.org/wiki/Mating_of_yeast", out.width = '75%', fig.align='center'}
+```{r pressure, echo=FALSE, fig.cap="**Figure 1** Adapted from Wikipedia", out.width = '75%', fig.align='center'}
 knitr::include_graphics("Yeast_mating_scheme.jpg")
 ```
-
+<a href="https://en.wikipedia.org/wiki/Mating_of_yeast" target="_blank">wikipedia</a>
 R session setup
 ===============
 
@@ -114,9 +114,7 @@ nrow(count.data)
 Differential expression analysis
 ================================
 
-We will perform a differential expression (DE) analysis using the [edgeR](https://bioconductor.org/packages/release/bioc/html/edgeR.html) package. This exercise  uses/explains only a little of edgeR, so it is strongly encouraged that you take a look at the [edgeR User's Guide](https://bioconductor.org/packages/release/bioc/vignettes/edgeR/inst/doc/edgeRUsersGuide.pdf) for further information.
-
-Another package that is commonly used for DE analysis is [DESeq2](https://bioconductor.org/packages/release/bioc/html/DESeq2.html), which also has a very nice [User Guide](https://bioconductor.org/packages/release/bioc/vignettes/DESeq2/inst/doc/DESeq2.html). Although DESeq2 will not be covered in this exercise, we encourage you to check it out sometime.
+We will perform a differential expression (DE) analysis using the <a href="https://bioconductor.org/packages/release/bioc/html/edgeR.html" target="_blank">edgeR</a>. This exercise  uses/explains only a little of edgeR, so it is strongly encouraged that you take a look at the <a href="https://bioconductor.org/packages/release/bioc/vignettes/edgeR/inst/doc/edgeRUsersGuide.pdf" target="_blank">edgeR User's Guide</a>. Another package that is commonly used for DE analysis is <a href="https://bioconductor.org/packages/release/bioc/html/DESeq2.html" target="_blank">DESeq2</a>, which also has a very nice <a href="https://bioconductor.org/packages/release/bioc/vignettes/DESeq2/inst/doc/DESeq2.html" target="_blank">User's Guide</a>. Although DESeq2 will not be covered in this exercise, we encourage you to check it out sometime.
 
 
 Data setup and exploration
@@ -232,7 +230,7 @@ et <- exactTest(y)
 topTags(et)  # inspect the top-DE genes
 ```
 
-> **Question `r qn<-qn+1;qn`:** Take a closer look at these genes (you can use https://www.yeastgenome.org/ for help). Do you see anything interesting related to their functions?
+> **Question `r qn<-qn+1;qn`:** Take a closer look at these genes (you can use the <a href="https://www.yeastgenome.org/" target="_blank">*Saccharomyces* Genome Database</a> for help). Do you see anything interesting related to their functions?
 
 <div class="answer"><table class="answer"><tr><td class="answer">
 **Answer:** 
@@ -248,7 +246,8 @@ res.table <- et$table
 res.table$FDR <- p.adjust(et$table$PValue, 'BH')  # BH = Benjamini-Hochberg method
 ```
 
-For a brief recap on why FDR adjustment is important, during multiple testing, see here: https://www.explainxkcd.com/wiki/index.php/882:_Significant.
+For a brief recap on why FDR adjustment is important, during multiple testing, take a look <a href="https://www.explainxkcd.com/wiki/index.php/882:_Significant" target="_blank">here</a>.
+
 
 `r sn<-sn+1; paste(sn,". ", sep="")` Export the results table to a .txt file:
 ```{r, eval=T}
@@ -382,8 +381,7 @@ We are now ready to fit our GLM to the count data. To do this, we will use the `
 fit <- glmQLFit(y, design)
 ```
 
-Alternatively, we could use the `glmFit` function, which uses a slightly different algorithm. You can find more details in the [edgeR User's Guide](https://bioconductor.org/packages/release/bioc/vignettes/edgeR/inst/doc/edgeRUsersGuide.pdf).
-
+Alternatively, we could use the `glmFit` function, which uses a slightly different algorithm. You can find more details in the <a href="https://bioconductor.org/packages/release/bioc/vignettes/edgeR/inst/doc/edgeRUsersGuide.pdf" target="_blank">edgeR User's Guide</a>. 
 Now we want to use our fitted GLM to estimate the expression change between the pheromone-affected and pheromone-unaffected samples, while ignoring differences associated with the carbon source (glucose vs. ethanol). To do so, we will perfom what is known as "blocking", where the effect of the carbon source difference is "blocked" from our expression change estimation.
 
 `r sn<-sn+1; paste(sn,". ", sep="")` Perform a likelihood test to estimate gene expression changes caused by the pheromone:
