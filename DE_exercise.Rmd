@@ -56,10 +56,10 @@ qn <- sn <- 0
 Introduction
 ===============
 
-This exercise will use unpublished (!) RNA Seq data (gene counts) from cultures of *Saccharomyces cerevisiae* of mating type **a** that have been externally treated with a pheromone called 'alpha factor'. In the wild, haploid yeast cells mate via the production of pheromones (Figure 1), which signals their presence to neighboring cells. When cells of the opposite mating type sense each other (via their pheromones) they respond by forming 'shmoos', growth projections that allow cells to make contact and subsequently mate to form a diploid cell. The aim of this work was therefore to find out how pheromone treatment affects cells, using a genome-wide perspective.
+This exercise will use unpublished (!) RNA Seq data (gene counts) from cultures of *Saccharomyces cerevisiae* of mating type **a** that have been externally treated with a pheromone called 'alpha factor'. In the wild, haploid yeast cells mate via the production of pheromones (Figure 1), which signals their presence to neighboring cells. When cells of the opposite mating type sense each other (via their pheromones) they respond by forming 'shmoos', growth projections that allow cells to make contact and subsequently mate to form a diploid cell. The aim of this work was therefore to find out how pheromone treatment affects cells, from a genome-wide perspective.
 
 ```{r pressure, echo=FALSE, fig.cap="**Figure 1** Adapted from Wikipedia", out.width = '75%', fig.align='center'}
-knitr::include_graphics("Yeast_mating_scheme.jpg")
+knitr::include_graphics("data/figs/Yeast_mating_scheme.jpg")
 ```
 
 R session setup
@@ -243,7 +243,7 @@ Export results
 The table of DE results is saved in `et$table`, but it does not contain the FDR-adjusted p-values. We can add this using the `p.adjust` function:
 ```{r}
 res.table <- et$table
-res.table$FDR <- p.adjust(et$table$PValue, 'BH')  # BH = Benjamini-Hochberg method
+res.table$FDR <- p.adjust(res.table$PValue, 'BH')  # BH = Benjamini-Hochberg method
 ```
 
 For a brief recap on why FDR adjustment is important, during multiple testing, take a look <a href="https://www.explainxkcd.com/wiki/index.php/882:_Significant" target="_blank">here</a>.
@@ -347,8 +347,8 @@ The ones and zeros indicate whether each sample is or is not (respectively) assi
 </td></tr></table></div>
 
 
-Data filtering, normalization and dispersion
-------------------------------------
+Data filtering, normalization, and dispersion
+---------------------------------------------
 
 `r sn<-sn+1; paste(sn,". ", sep="")` Filter low-count genes from the count data, this time by providing our design matrix as sample groups were not specified in the DGEList object:
 ```{r}
@@ -374,7 +374,9 @@ plotBCV(y)
 GLM fitting and DE estimation
 -----------------------------
 
-We are now ready to fit our GLM to the count data. To do this, we will use the `glmQLFit` function, which fits a quasi-likelihood negative binomial model to the count data.
+We are now ready to fit our GLM to the count data. To do this, we will use the `glmQLFit` function, which fits a quasi-likelihood negative binomial model to the count data. 
+
+What this means is that we are fitting each gene's mean expression and variance to a negative binomial distribution, which has been found to sufficiently approximate the observed distribution of RNA-Seq data. However, the use of this distribution alone can still lead to an underestimation of the false-discovery rate (i.e., too many significant genes). Therefore, the "quasi-likelihood" approach includes an additional parameter when fitting the GLM that incorporates uncertainty of the modeled variances, yielding a more accurate representation (see, e.g., <a href="https://doi.org/10.1515/1544-6115.1826" target="_blank">S. P. Lund, et al. (2012) *Stat Appl Genet Mol Biol*</a>).
 
 `r sn<-sn+1; paste(sn,". ", sep="")` Fit the GLM:
 ```{r}
@@ -411,10 +413,16 @@ The results show a similar trend, but it's clear that the results have been subs
 Export 
 ============
 
+`r sn<-sn+1; paste(sn,". ", sep="")` Add the FDR values to the results table:
+```{r}
+res.table <- qlf$table
+res.table$FDR <- p.adjust(res.table$PValue, 'BH')  # BH = Benjamini-Hochberg method
+```
+
 
 `r sn<-sn+1; paste(sn,". ", sep="")` Export the results table to a .txt file:
 ```{r, eval=T}
-write.table(qlf$table, file = 'data/DE_results/DE_results_merged.txt', quote=F, sep='\t')
+write.table(res.table, file = 'data/DE_results/DE_results_merged.txt', quote=F, sep='\t')
 ```
 
 
