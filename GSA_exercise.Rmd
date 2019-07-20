@@ -60,7 +60,7 @@ Gene set analysis (GSA) is a commonly used approach for interpreting big omic da
 
 
 ```{r pressure, echo=FALSE, fig.cap="**Figure 1**", out.width = '75%', fig.align='center'}
-knitr::include_graphics("GSA_scheme-v2.jpg")
+knitr::include_graphics("data/figs/GSA_scheme-v2.jpg")
 ```
 
 
@@ -167,9 +167,6 @@ We will now generate a volcano plot to help explore our results. To make the plo
 
 `r sn<-sn+1; paste(sn,". ", sep="")` Generate a volcano plot, then try hovering over the points to each gene name:
 ```{r, fig.width=6}
-# (Optional) filter genes to avoid a large file size
-diffExpRes_subset <- subset(diffExpRes$PValue, diffExpRes$FDR < 1e-10)
-# generate plot
 # NB. FDR has been log transformed!
 plot_ly(data=diffExpRes, x=~logFC, y=~-log10(FDR),
         type='scatter', mode='markers',
@@ -194,7 +191,7 @@ It would be quite tricky to interpret the plot without this transformation :)
 
 Let's now add some additional formating to aid interpretion of the plot further, as we would only want to focus on genes which are both significantly differentially expressed and which also have a notable fold change (FC). Typically significance cut-offs vary between 0.05, 0.01 and 0.001, whilst FC cut-offs are often set to 2 fold and 10 fold changes (corresponding to logFC of ±1 and ±3.3 respectively).
 
-```{r, fig.width=6}
+```{r, fig.width=8}
 # add a grouping column;
 diffExpRes["group"] <- "logFC < 1"
 
@@ -208,7 +205,8 @@ plot_ly(data = diffExpRes,
         type='scatter', 
         mode = "markers", 
         color = ~group, 
-        hovertext= ~Name,
+        text=~Name,
+        hoverinfo='text',
         colors=c("grey","black","orange") )
 
 ```
@@ -443,8 +441,7 @@ The downregulated GO-terms would suggest both transcription and translation acti
 gsaRes <- runGSA(pvals, sign(logfc), geneSetStat="stouffer", gsc=gscGO, gsSizeLim=c(20, 200))
 ```
 
-In this case, we provide the gene p-values **and** the fold-change direction (`sign(logfc)`) as separate inputs because this method, unlike the GSEA, does not require a single gene-level statistic.
-
+The GSEA method we used previously takes only one set of values for the genes, so we had to combine our fold-changes and p-values into a single metric. For methods such as Stouffer's, we provide the gene p-values **and** the fold-change direction (`sign(logfc)`) as separate inputs. This allows Piano to calculate additional directionality classes (distinct directional, mixed-directional, and non-directional). If you forgot what these mean, check out the <a href="https://dx.doi.org/10.1093%2Fnar%2Fgkt111" target="_blank">Piano paper</a>.
 
 `r sn<-sn+1; paste(sn,". ", sep="")` Plot the results using a network plot, and play around with the options until you think it looks nice and presents the results from the GSA in a good way.
 
@@ -644,7 +641,7 @@ gscGO  # take a look
 
 `r sn<-sn+1; paste(sn,". ", sep="")` Run a reporter metabolite analysis using the yeast-GEM GSC:
 ```{r, message=F, warning=F}
-gsaRes <- runGSA(pvals, sign(logfc), geneSetStat="reporter", gsc=gscGO, gsSizeLim=c(20, 200))
+gsaRes <- runGSA(pvals, sign(logfc), geneSetStat="reporter", gsc=gscGO, gsSizeLim=c(10, 200))
 ```
 
 `r sn<-sn+1; paste(sn,". ", sep="")` Examine your results using `exploreGSAres`, `GSAheatmap`, or `networkPlot2`:
@@ -655,7 +652,8 @@ networkPlot2(gsaRes, "distinct", "both", adjusted=T, significance=0.05, ncharLab
              scoreColors=c("red", "orange", "yellow", "blue", "lightblue", "lightgreen"))
 
 #View(GSAsummaryTable(gsaRes))
-#GSAheatmap(gsaRes, adjusted=T, ncharLabel=Inf, cellnote='rank', cex=1.4)
+#GSAheatmap(gsaRes, adjusted=F, ncharLabel=Inf, cellnote='rank', cex=1.4)
+#GSAheatmap(gsaRes, adjusted=F, ncharLabel=Inf, cellnote='pvalue', cex=0.8)
 
 
 ```
