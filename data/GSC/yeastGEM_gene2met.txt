@@ -205,8 +205,8 @@ YBR003W	isopentenyl diphosphate
 YBR003W	pentaprenyl diphosphate
 YBR004C	dolichyl D-mannosyl phosphate
 YBR004C	dolichyl phosphate
-YBR004C	6-O-{2-O-[(2-aminoethyl)phosphoryl]-alpha-D-mannosyl-(1->4)-alpha-D-glucosaminyl}-O-acyl-1-phosphatidyl-1D-myo-inositol [endoplasmic reticulum]
-YBR004C	6-O-{alpha-D-mannosyl-(1->6)-2-O-[(2-aminoethyl)phosphoryl]-alpha-D-mannosyl-(1->4)-alpha-D-glucosaminyl}-O-acyl-1-phosphatidyl-1D-myo-inositol [endoplasmic reticulum]
+YBR004C	6-O-{2-O-[(2-aminoethyl)phosphoryl]-alpha-D-mannosyl-(1->4)-alpha-D-glucosaminyl}-O-acyl-1-phosphatidyl-1D-myo-inositol
+YBR004C	6-O-{alpha-D-mannosyl-(1->6)-2-O-[(2-aminoethyl)phosphoryl]-alpha-D-mannosyl-(1->4)-alpha-D-glucosaminyl}-O-acyl-1-phosphatidyl-1D-myo-inositol
 YBR006W	H+
 YBR006W	H2O
 YBR006W	succinate
@@ -615,7 +615,7 @@ YBR244W	glutathione disulfide
 YBR248C	H+
 YBR248C	L-glutamate
 YBR248C	L-glutamine
-YBR248C	5-[(5-phospho-1-deoxy-D-ribulos-1-ylamino)methylideneamino]-1-(5-phospho-D-ribosyl)imidazole-4-carboxamide [cytoplasm]
+YBR248C	5-[(5-phospho-1-deoxy-D-ribulos-1-ylamino)methylideneamino]-1-(5-phospho-D-ribosyl)imidazole-4-carboxamide
 YBR248C	AICAR
 YBR248C	D-erythro-1-(imidazol-4-yl)glycerol 3-phosphate
 YBR249C	H2O
@@ -705,7 +705,7 @@ YCL030C	NAD
 YCL030C	NADH
 YCL030C	diphosphate
 YCL030C	L-histidine
-YCL030C	1-(5-phospho-D-ribosyl)-5-[(5-phospho-D-ribosylamino)methylideneamino]imidazole-4-carboxamide [cytoplasm]
+YCL030C	1-(5-phospho-D-ribosyl)-5-[(5-phospho-D-ribosylamino)methylideneamino]imidazole-4-carboxamide
 YCL030C	1-(5-phosphoribosyl)-5'-AMP
 YCL030C	5-phosphoribosyl-ATP
 YCL030C	L-histidinol
@@ -736,7 +736,7 @@ YCL050C	P1-(5'-adenosyl),P4-(5'-guanosyl) tetraphosphate
 YCL052C	dolichyl D-mannosyl phosphate
 YCL052C	dolichyl phosphate
 YCL052C	6-(alpha-D-glucosaminyl)-O-acyl-1-phosphatidyl-1D-myo-inositol
-YCL052C	6-O-[alpha-D-mannosyl-(1->4)-alpha-D-glucosaminyl]-O-acyl-1-phosphatidyl-1D-myo-inositol [endoplasmic reticulum]
+YCL052C	6-O-[alpha-D-mannosyl-(1->4)-alpha-D-glucosaminyl]-O-acyl-1-phosphatidyl-1D-myo-inositol
 YCL064C	2-oxobutanoate
 YCL064C	ammonium
 YCL064C	pyruvate
@@ -1450,8 +1450,8 @@ YDR300C	ADP
 YDR300C	ATP
 YDR300C	L-glutamate
 YDR300C	L-gamma-glutamyl phosphate
-YDR302W	6-[6-(2-aminoethylphosphoryl)-alpha-mannosyl-(1->6)-2-(2-aminoethylphosphoryl)-alpha-mannosyl-(1->6)-alpha-2-(2-aminoethylphosphoryl)mannosyl-(1->4)-alpha-glucosaminyl]-O-acyl-1-phosphatidyl-1D-myo-inositol [endoplasmic reticulum]
-YDR302W	6-O-{alpha-D-mannosyl-(1->2)-alpha-D-mannosyl-(1->6)-2-O-[(2-aminoethyl)phosphoryl]-alpha-D-mannosyl-(1->4)-alpha-D-glucosaminyl}-O-acyl-1-phosphatidyl-1D-myo-inositol [endoplasmic reticulum]
+YDR302W	6-[6-(2-aminoethylphosphoryl)-alpha-mannosyl-(1->6)-2-(2-aminoethylphosphoryl)-alpha-mannosyl-(1->6)-alpha-2-(2-aminoethylphosphoryl)mannosyl-(1->4)-alpha-glucosaminyl]-O-acyl-1-phosphatidyl-1D-myo-inositol
+YDR302W	6-O-{alpha-D-mannosyl-(1->2)-alpha-D-mannosyl-(1->6)-2-O-[(2-aminoethyl)phosphoryl]-alpha-D-mannosyl-(1->4)-alpha-D-glucosaminyl}-O-acyl-1-phosphatidyl-1D-myo-inositol
 YDR302W	diglyceride backbone
 YDR302W	phosphatidylethanolamine backbone
 YDR305C	H+
@@ -2278,8 +2278,8 @@ YGL125W	NADP(+)
 YGL125W	NADPH
 YGL125W	5-methyltetrahydrofolate
 YGL142C	dolichyl D-mannosyl phosphate
-YGL142C	6-O-{alpha-D-mannosyl-(1->6)-2-O-[(2-aminoethyl)phosphoryl]-alpha-D-mannosyl-(1->4)-alpha-D-glucosaminyl}-O-acyl-1-phosphatidyl-1D-myo-inositol [endoplasmic reticulum]
-YGL142C	6-O-{alpha-D-mannosyl-(1->2)-alpha-D-mannosyl-(1->6)-2-O-[(2-aminoethyl)phosphoryl]-alpha-D-mannosyl-(1->4)-alpha-D-glucosaminyl}-O-acyl-1-phosphatidyl-1D-myo-inositol [endoplasmic reticulum]
+YGL142C	6-O-{alpha-D-mannosyl-(1->6)-2-O-[(2-aminoethyl)phosphoryl]-alpha-D-mannosyl-(1->4)-alpha-D-glucosaminyl}-O-acyl-1-phosphatidyl-1D-myo-inositol
+YGL142C	6-O-{alpha-D-mannosyl-(1->2)-alpha-D-mannosyl-(1->6)-2-O-[(2-aminoethyl)phosphoryl]-alpha-D-mannosyl-(1->4)-alpha-D-glucosaminyl}-O-acyl-1-phosphatidyl-1D-myo-inositol
 YGL148W	phosphate
 YGL148W	5-O-(1-carboxyvinyl)-3-phosphoshikimic acid
 YGL148W	chorismate
@@ -3092,8 +3092,8 @@ YIL013C	fecosterol
 YIL013C	lanosterol
 YIL013C	ergosterol
 YIL013C	zymosterol
-YIL020C	5-[(5-phospho-1-deoxy-D-ribulos-1-ylamino)methylideneamino]-1-(5-phospho-D-ribosyl)imidazole-4-carboxamide [cytoplasm]
-YIL020C	1-(5-phospho-D-ribosyl)-5-[(5-phospho-D-ribosylamino)methylideneamino]imidazole-4-carboxamide [cytoplasm]
+YIL020C	5-[(5-phospho-1-deoxy-D-ribulos-1-ylamino)methylideneamino]-1-(5-phospho-D-ribosyl)imidazole-4-carboxamide
+YIL020C	1-(5-phospho-D-ribosyl)-5-[(5-phospho-D-ribosylamino)methylideneamino]imidazole-4-carboxamide
 YIL020C	D-fructose
 YIL020C	raffinose
 YIL020C	melibiose
@@ -3128,7 +3128,7 @@ YIL083C	diphosphate
 YIL083C	CTP
 YIL083C	CMP
 YIL083C	(R)-4'-phosphopantothenic acid
-YIL083C	N-[(R)-4-phosphonopantothenoyl]-L-cysteine [cytoplasm]
+YIL083C	N-[(R)-4-phosphonopantothenoyl]-L-cysteine
 YIL094C	H+
 YIL094C	carbon dioxide
 YIL094C	NAD
@@ -3444,7 +3444,7 @@ YJR010W	5'-adenylyl sulfate
 YJR013W	dolichyl D-mannosyl phosphate
 YJR013W	dolichyl phosphate
 YJR013W	6-(alpha-D-glucosaminyl)-O-acyl-1-phosphatidyl-1D-myo-inositol
-YJR013W	6-O-[alpha-D-mannosyl-(1->4)-alpha-D-glucosaminyl]-O-acyl-1-phosphatidyl-1D-myo-inositol [endoplasmic reticulum]
+YJR013W	6-O-[alpha-D-mannosyl-(1->4)-alpha-D-glucosaminyl]-O-acyl-1-phosphatidyl-1D-myo-inositol
 YJR016C	H2O
 YJR016C	3-methyl-2-oxobutanoate
 YJR016C	(S)-3-methyl-2-oxopentanoate
@@ -3783,7 +3783,7 @@ YKL085W	(S)-malate
 YKL088W	H+
 YKL088W	carbon dioxide
 YKL088W	pantetheine 4'-phosphate
-YKL088W	N-[(R)-4-phosphonopantothenoyl]-L-cysteine [cytoplasm]
+YKL088W	N-[(R)-4-phosphonopantothenoyl]-L-cysteine
 YKL094W	H+
 YKL094W	H2O
 YKL094W	palmitate
@@ -3844,8 +3844,8 @@ YKL152C	1,3-bisphospho-D-glycerate
 YKL152C	3-phosphonato-D-glycerate(3-)
 YKL152C	2-phospho-D-glyceric acid
 YKL152C	2,3-bisphospho-D-glyceric acid
-YKL165C	6-O-{2-O-[(2-aminoethyl)phosphoryl]-alpha-D-mannosyl-(1->4)-alpha-D-glucosaminyl}-O-acyl-1-phosphatidyl-1D-myo-inositol [endoplasmic reticulum]
-YKL165C	6-O-[alpha-D-mannosyl-(1->4)-alpha-D-glucosaminyl]-O-acyl-1-phosphatidyl-1D-myo-inositol [endoplasmic reticulum]
+YKL165C	6-O-{2-O-[(2-aminoethyl)phosphoryl]-alpha-D-mannosyl-(1->4)-alpha-D-glucosaminyl}-O-acyl-1-phosphatidyl-1D-myo-inositol
+YKL165C	6-O-[alpha-D-mannosyl-(1->4)-alpha-D-glucosaminyl]-O-acyl-1-phosphatidyl-1D-myo-inositol
 YKL165C	phosphatidylethanolamine backbone
 YKL174C	spermidine
 YKL174C	putrescine
@@ -4092,7 +4092,7 @@ YKR069W	uroporphyrinogen III
 YKR072C	H+
 YKR072C	carbon dioxide
 YKR072C	pantetheine 4'-phosphate
-YKR072C	N-[(R)-4-phosphonopantothenoyl]-L-cysteine [cytoplasm]
+YKR072C	N-[(R)-4-phosphonopantothenoyl]-L-cysteine
 YKR080W	5,10-methenyl-THF
 YKR080W	5,10-methylenetetrahydrofolate
 YKR080W	NAD
@@ -4212,8 +4212,8 @@ YLL028W	H+
 YLL028W	spermidine
 YLL028W	spermine
 YLL028W	putrescine
-YLL031C	6-[6-(2-aminoethylphosphoryl)-alpha-mannosyl-(1->6)-2-(2-aminoethylphosphoryl)-alpha-mannosyl-(1->6)-alpha-2-(2-aminoethylphosphoryl)mannosyl-(1->4)-alpha-glucosaminyl]-O-acyl-1-phosphatidyl-1D-myo-inositol [endoplasmic reticulum]
-YLL031C	6-O-{alpha-D-mannosyl-(1->2)-alpha-D-mannosyl-(1->6)-2-O-[(2-aminoethyl)phosphoryl]-alpha-D-mannosyl-(1->4)-alpha-D-glucosaminyl}-O-acyl-1-phosphatidyl-1D-myo-inositol [endoplasmic reticulum]
+YLL031C	6-[6-(2-aminoethylphosphoryl)-alpha-mannosyl-(1->6)-2-(2-aminoethylphosphoryl)-alpha-mannosyl-(1->6)-alpha-2-(2-aminoethylphosphoryl)mannosyl-(1->4)-alpha-glucosaminyl]-O-acyl-1-phosphatidyl-1D-myo-inositol
+YLL031C	6-O-{alpha-D-mannosyl-(1->2)-alpha-D-mannosyl-(1->6)-2-O-[(2-aminoethyl)phosphoryl]-alpha-D-mannosyl-(1->4)-alpha-D-glucosaminyl}-O-acyl-1-phosphatidyl-1D-myo-inositol
 YLL031C	diglyceride backbone
 YLL031C	phosphatidylethanolamine backbone
 YLL041C	ubiquinol-6
@@ -4402,7 +4402,7 @@ YLR172C	H+
 YLR172C	S-adenosyl-L-homocysteine
 YLR172C	S-adenosyl-L-methionine
 YLR172C	2-(3-amino-3-carboxypropyl)-L-histidine
-YLR172C	2-[3-carboxy-3-(methylammonio)propyl]-L-histidine [cytoplasm]
+YLR172C	2-[3-carboxy-3-(methylammonio)propyl]-L-histidine
 YLR174W	carbon dioxide
 YLR174W	2-oxoglutarate
 YLR174W	NADP(+)
@@ -5838,7 +5838,7 @@ YOR040W	(R)-S-lactoylglutathione
 YOR054C	H+
 YOR054C	carbon dioxide
 YOR054C	pantetheine 4'-phosphate
-YOR054C	N-[(R)-4-phosphonopantothenoyl]-L-cysteine [cytoplasm]
+YOR054C	N-[(R)-4-phosphonopantothenoyl]-L-cysteine
 YOR065W	ferricytochrome c
 YOR065W	ferrocytochrome c
 YOR065W	H+
@@ -7371,23 +7371,23 @@ YHR044C	2-deoxy-D-glucose
 YHR109W	H+
 YHR109W	S-adenosyl-L-homocysteine
 YHR109W	S-adenosyl-L-methionine
-YHR109W	[cytochrome c]-L-lysine [cytoplasm]
-YHR109W	[cytochrome c]-N6-methyl-L-lysine [cytoplasm]
+YHR109W	[cytochrome c]-L-lysine
+YHR109W	[cytochrome c]-N6-methyl-L-lysine
 YDR440W	H+
 YDR440W	S-adenosyl-L-homocysteine
 YDR440W	S-adenosyl-L-methionine
-YDR440W	L-lysine-[histone] [nucleus]
-YDR440W	N6-methyl-L-lysine-[histone] [nucleus]
+YDR440W	L-lysine-[histone]
+YDR440W	N6-methyl-L-lysine-[histone]
 YHR119W	H+
 YHR119W	S-adenosyl-L-homocysteine
 YHR119W	S-adenosyl-L-methionine
-YHR119W	L-lysine-[histone] [nucleus]
-YHR119W	N6-methyl-L-lysine-[histone] [nucleus]
+YHR119W	L-lysine-[histone]
+YHR119W	N6-methyl-L-lysine-[histone]
 YJL168C	H+
 YJL168C	S-adenosyl-L-homocysteine
 YJL168C	S-adenosyl-L-methionine
-YJL168C	L-lysine-[histone] [nucleus]
-YJL168C	N6-methyl-L-lysine-[histone] [nucleus]
+YJL168C	L-lysine-[histone]
+YJL168C	N6-methyl-L-lysine-[histone]
 YIL023C	Zn(2+)
 YMR243C	Zn(2+)
 YOR316C	Zn(2+)
@@ -7797,7 +7797,7 @@ YLR239C	ACP1
 YLR239C	Apoprotein
 YLR239C	Protein N6-(lipoyl)lysine
 YLR239C	Protein N6-(octanoyl)lysine
-YLR239C	Lipoyl-[acp] [mitochondrion]
+YLR239C	Lipoyl-[acp]
 YMR099C	beta-D-Glucose 6-phosphate
 YMR099C	alpha-D-Glucose 6-phosphate
 YMR162C	H+
@@ -7867,14 +7867,14 @@ YOR196C	L-methionine
 YOR196C	Sulfur donor
 YOR196C	Protein N6-(lipoyl)lysine
 YOR196C	Protein N6-(octanoyl)lysine
-YOR196C	Lipoyl-[acp] [mitochondrion]
+YOR196C	Lipoyl-[acp]
 YOR196C	5'-Deoxyadenosine
-YOR226C	S-sulfanyl-[L-cysteine desulfurase] [mitochondrion]
-YOR226C	[disordered-form [Fe-S] cluster scaffold protein] [mitochondrion]
-YOR226C	S-sulfanyl-[cysteine desulfurase]-[disordered-form scaffold protein] complex [mitochondrion]
-YPL135W	S-sulfanyl-[L-cysteine desulfurase] [mitochondrion]
-YPL135W	[disordered-form [Fe-S] cluster scaffold protein] [mitochondrion]
-YPL135W	S-sulfanyl-[cysteine desulfurase]-[disordered-form scaffold protein] complex [mitochondrion]
+YOR226C	S-sulfanyl-[L-cysteine desulfurase]
+YOR226C	[disordered-form [Fe-S] cluster scaffold protein]
+YOR226C	S-sulfanyl-[cysteine desulfurase]-[disordered-form scaffold protein] complex
+YPL135W	S-sulfanyl-[L-cysteine desulfurase]
+YPL135W	[disordered-form [Fe-S] cluster scaffold protein]
+YPL135W	S-sulfanyl-[cysteine desulfurase]-[disordered-form scaffold protein] complex
 YOR251C	H+
 YOR251C	sulphite
 YOR251C	hydrogen cyanide
@@ -7943,8 +7943,8 @@ YEL004W	UDP-N-acetyl-alpha-D-glucosamine
 YEL066W	H+
 YEL066W	acetyl-CoA
 YEL066W	coenzyme A
-YEL066W	[protein]-L-lysine [cytoplasm]
-YEL066W	[protein]-N(6)-acetyl-L-lysine [cytoplasm]
+YEL066W	[protein]-L-lysine
+YEL066W	[protein]-N(6)-acetyl-L-lysine
 YOL122C	H+
 YOL122C	Ca(2+)
 YOL122C	Cu2(+)
