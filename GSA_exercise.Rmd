@@ -304,8 +304,8 @@ The list we have used contains both up- and down-regulated genes, but so far we 
 </td></tr></table><br></div> 
 
 
-Enrichment analysis in R
-========================
+Gene set analysis in R
+======================
 
 
 Piano
