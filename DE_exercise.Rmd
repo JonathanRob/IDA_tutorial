@@ -56,19 +56,14 @@ qn <- sn <- 0
 Introduction
 ===============
 
-This exercise will use unpublished (!) RNA Seq data (gene counts) from cultures of *Saccharomyces cerevisiae* of mating type **a** that have been externally treated with a pheromone called 'alpha factor'. In the wild, haploid yeast cells mate via the production of pheromones (Figure 1), which signals their presence to neighboring cells. When cells of the opposite mating type sense each other (via their pheromones) they respond by forming 'shmoos', growth projections that allow cells to make contact and subsequently mate to form a diploid cell. The aim of this work was therefore to find out how pheromone treatment affects cells, from a genome-wide perspective.
-
-```{r pressure, echo=FALSE, fig.cap="**Figure 1** Adapted from Wikipedia", out.width = '75%', fig.align='center'}
-knitr::include_graphics("data/figs/Yeast_mating_scheme.jpg")
-```
+This exercise will use published RNA Seq data (gene counts) from liver hepatocellular carcinoma (LIHC) tumor and normal liver tissue samples obtained from The Cancer Genome Atlas (TCGA). The aim of this exercise is to estimate the change in expression of each gene between normal tissue (NT) and primary tumor (TP) samples.
 
 R session setup
 ===============
 
+Data is classified as either normal tissue (NT) or primary tumor (TP). The count data files are located in the `data/gene_counts/` subdirectory in the `IDA_tutorial` directory.
 
-Data is here is classified as either pheromone-affected or pheromone-unaffected. The count data files are located in the `data/gene_counts/` subdirectory in the `IDA_tutorial` directory.
-
-The `gene_counts_glucose.txt` dataset corresponds to glucose as the carbon source, whereas the `gene_counts_ethanol.txt` dataset used ethanol. This was to show the effect of pheromone on cells  undergoing two different types of metabolism: fermentation (with glucose) or respiration (with ethanol). Each dataset includes 6 pheromone-affected samples, and several pheromone-unaffected samples (24 for glucose, 15 for ethanol).
+The `gene_counts_LIHC.txt` dataset contains 100 samples (columns) with count values for 54,335 genes (rows). Samples are labeled as either "NT" (50 samples) or "TP" (50 samples) followed by a number. Note that the number does not correspond to anything meaningful (e.g., patient)
 
 `r sn<-sn+1; paste(sn,". ", sep="")` Start R and use `setwd()` (or Session > Set Working Directory > Choose Directory... from the top menu bar) to change the working directory to the `IDA_tutorial/` directory, which should contain a subdirectory named `data/`.
 
@@ -90,25 +85,13 @@ If something fails, try to understand the error message and fix it. If you get s
 Load data
 =========
 
-`r sn<-sn+1; paste(sn,". ", sep="")` Begin by loading the count data corresponding to the experiment of interest (glucose or ethanol conditions):
+`r sn<-sn+1; paste(sn,". ", sep="")` Begin by loading the LIHC count data:
 ```{r}
-count.data <- read.delim('data/gene_counts/gene_counts_glucose.txt', stringsAsFactors=F, row.names=1)
-# count.data <- read.delim('data/gene_counts/gene_counts_ethanol.txt', stringsAsFactors=F, row.names=1)
+count.data <- read.delim('data/gene_counts/gene_counts_LIHC.txt', stringsAsFactors=F, row.names=1)
 
-# preview the first few rows of the data
-head(count.data)
+# preview the first few rows and columns of the data
+count.data[1:10,1:10]
 ```
-
-
-> **Question `r qn<-qn+1;qn`:** How many genes are in the dataset?
-
-<div class="answer"><table class="answer"><tr><td class="answer">
-**Answer:** 
-```{r}
-nrow(count.data)
-```
-</td></tr></table></div>
-
 
 
 Differential expression analysis
@@ -120,18 +103,18 @@ We will perform a differential expression (DE) analysis using the <a href="https
 Data setup and exploration
 --------------------------
 
-We want to determine which genes are differentially expressed between two groups of samples - in this case, between "pheromone-unaffected" and "pheromone-affected" samples, which we have indicated by column names beginning with a "U" or "P", respectively. We can take a quick look at the column names to see what samples we have:
+We want to determine which genes are differentially expressed between two groups of samples - in this case, between "normal tissue" and "primary tumor" samples, which we have indicated by column names beginning with an "NT" or "TP", respectively. We can take a quick look at the first 20 column names to preview what samples we have:
 ```{r}
-colnames(count.data)
+colnames(count.data)[1:20]
 ```
 
 
 `r sn<-sn+1; paste(sn,". ", sep="")` Generate a factor specifying the group to which each sample belongs:
 ```{r}
-sample.groups <- factor(startsWith(colnames(count.data), 'P'), labels=c('unaffected','pheromone'))
+sample.groups <- factor(startsWith(colnames(count.data), 'TP'), labels=c('normal','tumor'))
 
 # check that we set up the groups correctly
-data.frame(sample=colnames(count.data), groups=sample.groups)
+head(data.frame(sample=colnames(count.data), groups=sample.groups), 10)
 ```
 
 
@@ -142,9 +125,28 @@ y <- DGEList(counts=count.data, group=sample.groups)
 
 This DGEList object 'holds' the dataset to be analysed by edgeR and the subsequent calculations relevant for the analysis.
 
-Before performing any DE analysis, we can take a look at similarities and differences among different samples using a multidimensional scaling (MDS) plot:
+
+Filtering and normalization
+---------------------------
+
+Often, RNA Seq data will contain low-count genes that are not expressed, or expressed at very low levels in many samples. The data for these genes is essentially noise that does not provide any meaningful information and should therefore be removed prior to DE analysis.
+
+Although there is no single "correct" approach for removing low-count genes, a common technique involves removing those that are below some threshold in a given fraction of the samples.
+
+`r sn<-sn+1; paste(sn,". ", sep="")` Filter (remove) low-count genes from the count data, using a cut off of 10 reads:
 ```{r}
-plotMDS(y, cex=0.8)  # "cex" sets the label font size
+keep <- filterByExpr(y, min.count = 10)
+y <- y[keep, , keep.lib.sizes=F]
+```
+
+The `filterByExpr` function will only keep genes that have at least `min.count` counts per million (CPM) in at least `n` samples, where `n` is the number of samples in the smallest group (we have equal group sizes of 50 samples in this case, so `n = 50`).
+
+The `keep.lib.sizes=F` argument specifies that we want to recalculate the sample library sizes after removing the low-count genes from the data.
+
+
+At this point, we can take a look at similarities and differences among different samples using a multidimensional scaling (MDS) plot:
+```{r}
+plotMDS(y, cex=0.8, col=c('black','red')[sample.groups])  # "cex" sets the label font size
 ```
 
 
@@ -156,39 +158,14 @@ Like PCA, MDS is a dimensionality reduction technique that allows the visualizat
 </td></tr></table></div>
 
 
-> **Question `r qn<-qn+1;qn`:** Does it look like our samples are grouping/separating well based on their pheromone status? Do you notice any other patterns in the data?
+> **Question `r qn<-qn+1;qn`:** Does it look like our samples are grouping/separating well based on their sample type? Do you notice any other patterns in the data?
 
 <div class="answer"><table class="answer"><tr><td class="answer">
 **Answer:** 
-Yes, the pheromone-unaffected (U) and pheromone-affected (P) samples clearly separate on the x-axis, indicating a substantial difference in transcriptomic signatures between the two conditions.
+Yes, the normal tissue (NT) and primary tumor (TP) samples clearly separate on primarily the x-axis, indicating a substantial difference in transcriptomic signatures between the two conditions.
 
-Another feature is a greater spread/difference among U samples than among P samples, but this could in part be due to a larger number of U samples.
-
-Since the U vs. P difference is so great, it can be hard to pick up on any other patterns that may be present. To investigate this further, we can take a look at only the U samples:
-```{r}
-plotMDS(DGEList(counts=count.data[,7:ncol(count.data)]), cex=0.8)
-```
-
-It looks like there may be some further grouping among the unaffected (U) samples...
+Another feature is a greater spread/difference among TP samples than among NT samples.
 </td></tr></table></div>
-
-
-Filtering and normalization
----------------------------
-
-Often, RNA Seq data will contain low-count genes that are not expressed, or expressed at very low levels in many samples. The data for these genes is essentially noise that does not provide any meaningful information and should therefore be removed prior to DE analysis.
-
-Although there is no single "correct" approach for removing low-count genes, a common technique involves removing those that are below some threshold in a given fraction of the samples.
-
-`r sn<-sn+1; paste(sn,". ", sep="")` Filter (remove) low-count genes from the count data, using an arbitrary cut off of 10 reads:
-```{r}
-keep <- filterByExpr(y, min.count = 10)
-y <- y[keep, , keep.lib.sizes=F]
-```
-
-The `filterByExpr` function will only keep genes that have at least `min.count` counts per million (CPM) in at least `n` samples, where `n` is the number of samples in the smallest group (the `pheromone` group, in this case, where `n = 6`).
-
-The `keep.lib.sizes=F` argument specifies that we want to recalculate the sample library sizes after removing the low-count genes from the data.
 
 
 <br>The next step is to normalize the data by RNA composition, in order to address problems caused by the counts in a sample being dominated by only a few highly expressed genes. This can cause other genes in the sample to exhibit artificially low count values. The normalization factors calculated using the `calcNormFactors` function are then used to scale the counts to avoid such problems.
@@ -200,7 +177,7 @@ y <- calcNormFactors(y)
 
 To view the normalization factors calculated for each sample (as well as library sizes), we can take a look at the `samples` attribute of our DGEList, `y`:
 ```{r}
-y$samples
+head(y$samples, 10)
 ```
 
 
@@ -215,7 +192,6 @@ y <- estimateDisp(y)
 We can also view the dispersion estimates using the BCV plot:
 ```{r}
 plotBCV(y)
-
 ```
 
 
@@ -230,11 +206,11 @@ et <- exactTest(y)
 topTags(et)  # inspect the top-DE genes
 ```
 
-> **Question `r qn<-qn+1;qn`:** Take a closer look at these genes (you can use the <a href="https://www.yeastgenome.org/" target="_blank">*Saccharomyces* Genome Database</a> for help). Do you see anything interesting related to their functions?
+> **Question `r qn<-qn+1;qn`:** Take a closer look at these genes (you can use Google for help). Do you see anything interesting related to their functions?
 
 <div class="answer"><table class="answer"><tr><td class="answer">
 **Answer:** 
-Yes, several genes seem to have an unknown function in the *Saccharomyces* Genome Database, which means little is known about them. This could be worth following up, to confirm if these genes have an important role in the pheromone response.
+[Answers may vary...]
 </td></tr></table></div>
 
 Export results
@@ -252,7 +228,7 @@ For a brief recap on why FDR adjustment is important, during multiple testing, t
 `r sn<-sn+1; paste(sn,". ", sep="")` Export the results table to a .txt file:
 ```{r, eval=T}
 # note: this command will overwrite the existing pre-generated DE_results_glucose.txt file
-write.table(res.table, file = 'data/DE_results/DE_results_glucose.txt', quote=F, sep='\t')
+write.table(res.table, file = 'data/DE_results/DE_results_LIHC.txt', quote=F, sep='\t')
 ```
 
 
@@ -267,163 +243,165 @@ Such cases can be approached using generalized linear models (GLMs). In this cas
 Data setup and exploration
 --------------------------
 
-We avoided such a situation in the example above by separating the glucose and ethanol conditions into two separate datasets, which were analyzed individually. But what if we wanted to combine these data together?
+NOTE: This section is not yet complete.
 
-`r sn<-sn+1; paste(sn,". ", sep="")` Import both gene count files:
-```{r}
-# load the glucose data, and append column names with a "g"
-glucose.data <- read.delim('data/gene_counts/gene_counts_glucose.txt',
-                           stringsAsFactors=F, row.names=1)
-colnames(glucose.data) <- paste(colnames(glucose.data), 'g', sep='')
+<!-- We avoided such a situation in the example above by excluding other clinical variables from the analysis. But what if we wanted to account for such factors? -->
 
-# load the ethanol data, and append column names with a "e"
-ethanol.data <- read.delim('data/gene_counts/gene_counts_ethanol.txt',
-                           stringsAsFactors=F, row.names=1)
-colnames(ethanol.data) <- paste(colnames(ethanol.data), 'e', sep='')
-```
+<!-- `r sn<-sn+1; paste(sn,". ", sep="")` Import both gene count files: -->
+<!-- ```{r} -->
+<!-- # load the glucose data, and append column names with a "g" -->
+<!-- glucose.data <- read.delim('data/gene_counts/gene_counts_glucose.txt', -->
+<!--                            stringsAsFactors=F, row.names=1) -->
+<!-- colnames(glucose.data) <- paste(colnames(glucose.data), 'g', sep='') -->
 
-
-`r sn<-sn+1; paste(sn,". ", sep="")` Merge the count data by gene IDs (row names):
-```{r}
-# merge datasets (by=0 indicates we merge by row names)
-count.data <- merge(glucose.data, ethanol.data, by=0)
-
-# set the row names as the gene IDs, and remove the "Row.names" column
-row.names(count.data) <- count.data$Row.names
-count.data <- count.data[,-1]
-
-# preview our merged dataframe
-head(count.data)
-```
-
-`r sn<-sn+1; paste(sn,". ", sep="")` As before, create a `DGEList` object from the `count.data` dataframe:
-```{r}
-y <- DGEList(counts=count.data)
-```
-
-Notice that this time, we did not specify the sample groups when creating our `DGEList`. The group is only specified at this step when dealing with a single variable (as in the example above), which is no longer the case. We will specify the sample grouping assignments in the next step.
+<!-- # load the ethanol data, and append column names with a "e" -->
+<!-- ethanol.data <- read.delim('data/gene_counts/gene_counts_ethanol.txt', -->
+<!--                            stringsAsFactors=F, row.names=1) -->
+<!-- colnames(ethanol.data) <- paste(colnames(ethanol.data), 'e', sep='') -->
+<!-- ``` -->
 
 
-`r sn<-sn+1; paste(sn,". ", sep="")` Take a look at the multidimensional scaling (MDS) plot (using colors this time):
-```{r}
-plotMDS(y, pch=16, 
-        col=c(rep('red',6), rep('blue',24), rep('orange',6), rep('purple',15)))
-legend(-2.5,-1.3, c('Pheromone Glc', 'Unaffected Glc', 'Pheromone EtOH', 'Unaffected EtOH'),
-       col=c('red','blue','orange','purple'), pch=16, cex=0.9)
-```
+<!-- `r sn<-sn+1; paste(sn,". ", sep="")` Merge the count data by gene IDs (row names): -->
+<!-- ```{r} -->
+<!-- # merge datasets (by=0 indicates we merge by row names) -->
+<!-- count.data <- merge(glucose.data, ethanol.data, by=0) -->
 
-> **Question `r qn<-qn+1;qn`:** What do you see? Are you surprised by this result?
+<!-- # set the row names as the gene IDs, and remove the "Row.names" column -->
+<!-- row.names(count.data) <- count.data$Row.names -->
+<!-- count.data <- count.data[,-1] -->
 
-<div class="answer"><table class="answer"><tr><td class="answer">
-**Answer:** 
-Four separate clusters can be seen. Interestingly the glucose and ethanol samples (both pheromone affected and unaffected groups) don't overlap, suggesting metabolism is having a big impact on gene expression.
-</td></tr></table></div>
+<!-- # preview our merged dataframe -->
+<!-- head(count.data) -->
+<!-- ``` -->
 
+<!-- `r sn<-sn+1; paste(sn,". ", sep="")` As before, create a `DGEList` object from the `count.data` dataframe: -->
+<!-- ```{r} -->
+<!-- y <- DGEList(counts=count.data) -->
+<!-- ``` -->
 
-Data classification
-------------------------
-
-`r sn<-sn+1; paste(sn,". ", sep="")` Generate a design matrix to classify each of our samples based on carbon source and pheromone status:
-```{r}
-# specify pheromone and carbon attribute of each sample
-pheromone <- factor(startsWith(colnames(count.data), 'P'), labels=c('unaffected','pheromone'))
-carbon <- factor(endsWith(colnames(count.data), 'e'), labels=c('glucose','ethanol'))
-
-# generate design matrix
-design <- model.matrix(~carbon + pheromone)
-rownames(design) <- colnames(y)
-
-```
-
-> **Question `r qn<-qn+1;qn`:** Does the design matrix make sense?
-
-<div class="answer"><table class="answer"><tr><td class="answer">
-**Answer:** 
-```{r}
-design[1:10, ]  # look at the first 10 rows
-```
-
-The ones and zeros indicate whether each sample is or is not (respectively) assigned to the group indicated in the column. Although the column names are a bit strange in `design`, we can see that sample `P1g` for example has a zero for `carbonethanol` because it is glucose, not ethanol, and a one for `pheromonepheromone` because it is pheromone-affected. 
-</td></tr></table></div>
+<!-- Notice that this time, we did not specify the sample groups when creating our `DGEList`. The group is only specified at this step when dealing with a single variable (as in the example above), which is no longer the case. We will specify the sample grouping assignments in the next step. -->
 
 
-Data filtering, normalization, and dispersion
----------------------------------------------
+<!-- `r sn<-sn+1; paste(sn,". ", sep="")` Take a look at the multidimensional scaling (MDS) plot (using colors this time): -->
+<!-- ```{r} -->
+<!-- plotMDS(y, pch=16,  -->
+<!--         col=c(rep('red',6), rep('blue',24), rep('orange',6), rep('purple',15))) -->
+<!-- legend(-2.5,-1.3, c('Pheromone Glc', 'Unaffected Glc', 'Pheromone EtOH', 'Unaffected EtOH'), -->
+<!--        col=c('red','blue','orange','purple'), pch=16, cex=0.9) -->
+<!-- ``` -->
 
-`r sn<-sn+1; paste(sn,". ", sep="")` Filter low-count genes from the count data, this time by providing our design matrix as sample groups were not specified in the DGEList object:
-```{r}
-keep <- filterByExpr(y, design=design, min.count = 10)
-y <- y[keep, , keep.lib.sizes=F]
-```
+<!-- > **Question `r qn<-qn+1;qn`:** What do you see? Are you surprised by this result? -->
 
-`r sn<-sn+1; paste(sn,". ", sep="")` Calculate the normalization factors for each sample:
-```{r}
-y <- calcNormFactors(y)
-```
-
-`r sn<-sn+1; paste(sn,". ", sep="")` Estimate the dispersion across all genes:
-```{r}
-y <- estimateDisp(y, design)
-```
-
-`r sn<-sn+1; paste(sn,". ", sep="")` Take a look at the BCV plot:
-```{r}
-plotBCV(y)
-```
-
-GLM fitting and DE estimation
------------------------------
-
-We are now ready to fit our GLM to the count data. To do this, we will use the `glmQLFit` function, which fits a quasi-likelihood negative binomial model to the count data. 
-
-What this means is that we are fitting each gene's mean expression and variance to a negative binomial distribution, which has been found to sufficiently approximate the observed distribution of RNA-Seq data. However, the use of this distribution alone can still lead to an underestimation of the false-discovery rate (i.e., too many significant genes). Therefore, the "quasi-likelihood" approach includes an additional parameter when fitting the GLM that incorporates uncertainty of the modeled variances, yielding a more accurate representation (see, e.g., <a href="https://doi.org/10.1515/1544-6115.1826" target="_blank">S. P. Lund, et al. (2012) *Stat Appl Genet Mol Biol*</a>).
-
-`r sn<-sn+1; paste(sn,". ", sep="")` Fit the GLM:
-```{r}
-fit <- glmQLFit(y, design)
-```
-
-Alternatively, we could use the `glmFit` function, which uses a slightly different algorithm. You can find more details in the <a href="https://bioconductor.org/packages/release/bioc/vignettes/edgeR/inst/doc/edgeRUsersGuide.pdf" target="_blank">edgeR User's Guide</a>. 
-Now we want to use our fitted GLM to estimate the expression change between the pheromone-affected and pheromone-unaffected samples, while ignoring differences associated with the carbon source (glucose vs. ethanol). To do so, we will perfom what is known as "blocking", where the effect of the carbon source difference is "blocked" from our expression change estimation.
-
-`r sn<-sn+1; paste(sn,". ", sep="")` Perform a likelihood test to estimate gene expression changes caused by the pheromone:
-```{r}
-qlf <- glmQLFTest(fit)
- # take a look at the most affected genes
-```
-
-Notice we didn't specify which comparison we wanted to perform (pheromone affected vs. unaffected, or glucose vs. ethanol). This is because by default the `glmQLFTest` function will test the last (3rd) coefficient in the model (`pheromone` in our case). If we instead wanted to look at gene expression changes between glucose and ethanol samples, we would specify this using the `coef` argument: e.g., `qlf <- glmQLFTest(fit, coeff=2)`, because the 2nd coefficient relates to carbon source (the 1st coefficient is simply the intercept, or baseline).
+<!-- <div class="answer"><table class="answer"><tr><td class="answer"> -->
+<!-- **Answer:**  -->
+<!-- Four separate clusters can be seen. Interestingly the glucose and ethanol samples (both pheromone affected and unaffected groups) don't overlap, suggesting metabolism is having a big impact on gene expression. -->
+<!-- </td></tr></table></div> -->
 
 
-> **Question `r qn<-qn+1;qn`:** How do these results compare to those in the first analysis?
+<!-- Data classification -->
+<!-- ------------------------ -->
 
-<div class="answer"><table class="answer"><tr><td class="answer">
-**Answer:** 
-```{r}
-# merge the results tables from both analyses
-merged.results <- merge(qlf$table, et$table, by=0)
+<!-- `r sn<-sn+1; paste(sn,". ", sep="")` Generate a design matrix to classify each of our samples based on carbon source and pheromone status: -->
+<!-- ```{r} -->
+<!-- # specify pheromone and carbon attribute of each sample -->
+<!-- pheromone <- factor(startsWith(colnames(count.data), 'P'), labels=c('unaffected','pheromone')) -->
+<!-- carbon <- factor(endsWith(colnames(count.data), 'e'), labels=c('glucose','ethanol')) -->
 
-# compare the log-transformed p-values with a scatter plot
-plot(-log10(merged.results$PValue.x), -log10(merged.results$PValue.y))
-```
+<!-- # generate design matrix -->
+<!-- design <- model.matrix(~carbon + pheromone) -->
+<!-- rownames(design) <- colnames(y) -->
 
-The results show a similar trend, but it's clear that the results have been substantially affected by the inclusion of the new data and the new analysis approach.
-</td></tr></table></div>
+<!-- ``` -->
 
-Export 
-============
+<!-- > **Question `r qn<-qn+1;qn`:** Does the design matrix make sense? -->
 
-`r sn<-sn+1; paste(sn,". ", sep="")` Add the FDR values to the results table:
-```{r}
-res.table <- qlf$table
-res.table$FDR <- p.adjust(res.table$PValue, 'BH')  # BH = Benjamini-Hochberg method
-```
+<!-- <div class="answer"><table class="answer"><tr><td class="answer"> -->
+<!-- **Answer:**  -->
+<!-- ```{r} -->
+<!-- design[1:10, ]  # look at the first 10 rows -->
+<!-- ``` -->
+
+<!-- The ones and zeros indicate whether each sample is or is not (respectively) assigned to the group indicated in the column. Although the column names are a bit strange in `design`, we can see that sample `P1g` for example has a zero for `carbonethanol` because it is glucose, not ethanol, and a one for `pheromonepheromone` because it is pheromone-affected.  -->
+<!-- </td></tr></table></div> -->
 
 
-`r sn<-sn+1; paste(sn,". ", sep="")` Export the results table to a .txt file:
-```{r, eval=T}
-write.table(res.table, file = 'data/DE_results/DE_results_merged.txt', quote=F, sep='\t')
-```
+<!-- Data filtering, normalization, and dispersion -->
+<!-- --------------------------------------------- -->
+
+<!-- `r sn<-sn+1; paste(sn,". ", sep="")` Filter low-count genes from the count data, this time by providing our design matrix as sample groups were not specified in the DGEList object: -->
+<!-- ```{r} -->
+<!-- keep <- filterByExpr(y, design=design, min.count = 10) -->
+<!-- y <- y[keep, , keep.lib.sizes=F] -->
+<!-- ``` -->
+
+<!-- `r sn<-sn+1; paste(sn,". ", sep="")` Calculate the normalization factors for each sample: -->
+<!-- ```{r} -->
+<!-- y <- calcNormFactors(y) -->
+<!-- ``` -->
+
+<!-- `r sn<-sn+1; paste(sn,". ", sep="")` Estimate the dispersion across all genes: -->
+<!-- ```{r} -->
+<!-- y <- estimateDisp(y, design) -->
+<!-- ``` -->
+
+<!-- `r sn<-sn+1; paste(sn,". ", sep="")` Take a look at the BCV plot: -->
+<!-- ```{r} -->
+<!-- plotBCV(y) -->
+<!-- ``` -->
+
+<!-- GLM fitting and DE estimation -->
+<!-- ----------------------------- -->
+
+<!-- We are now ready to fit our GLM to the count data. To do this, we will use the `glmQLFit` function, which fits a quasi-likelihood negative binomial model to the count data.  -->
+
+<!-- What this means is that we are fitting each gene's mean expression and variance to a negative binomial distribution, which has been found to sufficiently approximate the observed distribution of RNA-Seq data. However, the use of this distribution alone can still lead to an underestimation of the false-discovery rate (i.e., too many significant genes). Therefore, the "quasi-likelihood" approach includes an additional parameter when fitting the GLM that incorporates uncertainty of the modeled variances, yielding a more accurate representation (see, e.g., <a href="https://doi.org/10.1515/1544-6115.1826" target="_blank">S. P. Lund, et al. (2012) *Stat Appl Genet Mol Biol*</a>). -->
+
+<!-- `r sn<-sn+1; paste(sn,". ", sep="")` Fit the GLM: -->
+<!-- ```{r} -->
+<!-- fit <- glmQLFit(y, design) -->
+<!-- ``` -->
+
+<!-- Alternatively, we could use the `glmFit` function, which uses a slightly different algorithm. You can find more details in the <a href="https://bioconductor.org/packages/release/bioc/vignettes/edgeR/inst/doc/edgeRUsersGuide.pdf" target="_blank">edgeR User's Guide</a>.  -->
+<!-- Now we want to use our fitted GLM to estimate the expression change between the pheromone-affected and pheromone-unaffected samples, while ignoring differences associated with the carbon source (glucose vs. ethanol). To do so, we will perfom what is known as "blocking", where the effect of the carbon source difference is "blocked" from our expression change estimation. -->
+
+<!-- `r sn<-sn+1; paste(sn,". ", sep="")` Perform a likelihood test to estimate gene expression changes caused by the pheromone: -->
+<!-- ```{r} -->
+<!-- qlf <- glmQLFTest(fit) -->
+<!--  # take a look at the most affected genes -->
+<!-- ``` -->
+
+<!-- Notice we didn't specify which comparison we wanted to perform (pheromone affected vs. unaffected, or glucose vs. ethanol). This is because by default the `glmQLFTest` function will test the last (3rd) coefficient in the model (`pheromone` in our case). If we instead wanted to look at gene expression changes between glucose and ethanol samples, we would specify this using the `coef` argument: e.g., `qlf <- glmQLFTest(fit, coeff=2)`, because the 2nd coefficient relates to carbon source (the 1st coefficient is simply the intercept, or baseline). -->
+
+
+<!-- > **Question `r qn<-qn+1;qn`:** How do these results compare to those in the first analysis? -->
+
+<!-- <div class="answer"><table class="answer"><tr><td class="answer"> -->
+<!-- **Answer:**  -->
+<!-- ```{r} -->
+<!-- # merge the results tables from both analyses -->
+<!-- merged.results <- merge(qlf$table, et$table, by=0) -->
+
+<!-- # compare the log-transformed p-values with a scatter plot -->
+<!-- plot(-log10(merged.results$PValue.x), -log10(merged.results$PValue.y)) -->
+<!-- ``` -->
+
+<!-- The results show a similar trend, but it's clear that the results have been substantially affected by the inclusion of the new data and the new analysis approach. -->
+<!-- </td></tr></table></div> -->
+
+<!-- Export  -->
+<!-- ============ -->
+
+<!-- `r sn<-sn+1; paste(sn,". ", sep="")` Add the FDR values to the results table: -->
+<!-- ```{r} -->
+<!-- res.table <- qlf$table -->
+<!-- res.table$FDR <- p.adjust(res.table$PValue, 'BH')  # BH = Benjamini-Hochberg method -->
+<!-- ``` -->
+
+
+<!-- `r sn<-sn+1; paste(sn,". ", sep="")` Export the results table to a .txt file: -->
+<!-- ```{r, eval=T} -->
+<!-- write.table(res.table, file = 'data/DE_results/DE_results_merged.txt', quote=F, sep='\t') -->
+<!-- ``` -->
 
 
 Session info
